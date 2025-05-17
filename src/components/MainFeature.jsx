@@ -19,6 +19,7 @@ const MainFeature = ({ isOpen, onClose, searchQuery = '' }) => {
   const Save = getIcon('Save');
   const Trash = getIcon('Trash');
   const Star = getIcon('Star');
+  const Users = getIcon('Users');
   const Edit = getIcon('Edit');
   
   // Contact form state
@@ -303,23 +304,58 @@ const MainFeature = ({ isOpen, onClose, searchQuery = '' }) => {
   return (
     <div className="space-y-8">
       {/* Filters */}
-      <div className="flex flex-wrap items-center gap-2 mb-6">
-        <span className="text-surface-600 dark:text-surface-400 text-sm">Filter by tag:</span>
-        <button 
-          className={`px-3 py-1 text-sm rounded-full transition-all ${filterTag === '' ? 'bg-primary text-white' : 'bg-surface-200 dark:bg-surface-700 text-surface-700 dark:text-surface-300 hover:bg-surface-300 dark:hover:bg-surface-600'}`}
-          onClick={() => setFilterTag('')}
-        >
-          All
-        </button>
+      <div className="space-y-3 mb-6">
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-medium text-surface-800 dark:text-surface-200 flex items-center">
+            <span>Contacts</span>
+            <span className="filter-counter">{filteredContacts.length}</span>
+          </h3>
+        </div>
         
-        {availableTags.map(tag => (
-          <button 
-            key={tag}
-            className={`px-3 py-1 text-sm rounded-full transition-all ${filterTag === tag ? 'bg-primary text-white' : 'bg-surface-200 dark:bg-surface-700 text-surface-700 dark:text-surface-300 hover:bg-surface-300 dark:hover:bg-surface-600'}`}
-            onClick={() => setFilterTag(tag)}
-          >
-            {tag}
-          </button>
+        <div className="flex flex-wrap gap-3">
+          {/* All contacts filter */}
+          <div className="filter-group">
+            <button 
+              className={`filter-toggle ${filterTag === '' ? 'filter-toggle-active' : 'filter-toggle-inactive'}`}
+              onClick={() => setFilterTag('')}
+            >
+              <Users className="w-4 h-4" />
+              <span>All Contacts</span>
+            </button>
+          </div>
+          
+          {/* Personal connection filters */}
+          <div className="filter-group">
+            <div className="filter-container">
+              {['Friend', 'Family'].map(tag => (
+                <button key={tag} className={`filter-toggle ${filterTag === tag ? 'filter-toggle-active' : 'filter-toggle-inactive'}`} onClick={() => setFilterTag(tag)}>
+                  {tag}
+                </button>
+              ))}
+            </div>
+          </div>
+          
+          {/* Work-related filters */}
+          <div className="filter-group">
+            <div className="filter-container">
+              {['Team', 'Client', 'Tech', 'Design', 'Important'].map(tag => (
+                <button key={tag} className={`filter-toggle ${filterTag === tag ? 'filter-toggle-active' : 'filter-toggle-inactive'}`} onClick={() => setFilterTag(tag)}>
+                  {tag}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      {/* Contact Stats */}
+      <div className="mb-4 text-surface-600 dark:text-surface-400 text-sm">
+        {filteredContacts.length === 0 ? (
+          <span>No contacts found</span>
+        ) : filterTag ? (
+          <span>Showing {filteredContacts.length} contacts tagged with "{filterTag}"</span>
+        ) : (
+          <span>Showing all {filteredContacts.length} contacts</span>
         ))}
       </div>
       

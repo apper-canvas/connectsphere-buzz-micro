@@ -176,6 +176,82 @@ export const fetchContacts = async (options = {}) => {
 };
 
 /**
+ * Get all contacts - alias for fetchContacts with default options
+ * @returns {Promise<Array>} - Array of contact records
+ */
+export const getAllContacts = async () => {
+  return fetchContacts();
+};
+
+/**
+ * Get only favorite contacts
+ * @returns {Promise<Array>} - Array of favorite contact records
+ */
+export const getFavoriteContacts = async () => {
+  try {
+    const apperClient = getApperClient();
+    
+    const params = {
+      fields: CONTACT_FIELDS.all,
+      where: [
+        {
+          fieldName: 'isFavorite',
+          operator: 'ExactMatch',
+          values: [true]
+        }
+      ],
+      orderBy: [
+        {
+          field: 'firstName',
+          direction: 'asc'
+        }
+      ]
+    };
+    
+    const response = await apperClient.fetchRecords(CONTACT_TABLE, params);
+    
+    if (!response || !response.data) {
+      return [];
+    }
+    
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching favorite contacts:', error);
+    throw error;
+  }
+};
+
+/**
+ * Toggle favorite status for a contact
+ * @param {string|number} contactId - ID of the contact
+ * @returns {Promise<Object>} - Updated contact with toggled favorite status
+ */
+export const toggleFavoriteContact = async (contactId) => {
+  try {
+    const apperClient = getApperClient();
+    
+    // First, get the current contact to determine its favorite status
+    const contact = await apperClient.getRecordById(CONTACT_TABLE, contactId);
+    
+    if (!contact || !contact.data) {
+      throw new Error('Contact not found');
+    }
+    
+    // Toggle the favorite status
+    const updateData = {
+      Id: contactId,
+      isFavorite: !contact.data.isFavorite
+    };
+    
+    // Update the contact
+    return updateContact(updateData);
+  } catch (error) {
+    console.error('Error toggling favorite status:', error);
+    throw error;
+  }
+};
+
+/**
  * Create a new contact
  * @param {Object} contactData - Contact data to create
  * @returns {Promise<Object>} - Newly created contact

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, X, ArrowDownUp, Check, Star, Mail, Phone } from 'lucide-react';
 import { toast } from 'react-toastify';
-import { getAllContacts, getFavoriteContacts, toggleFavoriteContact, addNewContact } from '../services/contactService';
+import { getAllContacts, getFavoriteContacts, toggleFavoriteContact, createContact } from '../services/contactService';
 
 const MainFeature = ({ isOpen, onClose, searchQuery }) => {
   const [contacts, setContacts] = useState([]);
@@ -124,7 +124,7 @@ const MainFeature = ({ isOpen, onClose, searchQuery }) => {
   const handleSubmitContact = async (e) => {
     e.preventDefault();
     try {
-      const createdContact = await addNewContact(newContact);
+      const createdContact = await createContact(newContact);
       setContacts([...contacts, createdContact]);
       setNewContact({
         firstName: '',

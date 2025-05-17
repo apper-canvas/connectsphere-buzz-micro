@@ -38,12 +38,14 @@ export default {
       boxShadow: {
         'soft': '0 2px 15px -3px rgba(0, 0, 0, 0.07), 0 10px 20px -2px rgba(0, 0, 0, 0.04)',
         'card': '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)',
-        'card-hover': '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1)',
+        'card-hover': '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.05)',
         'neu-light': '5px 5px 15px #d1d9e6, -5px -5px 15px #ffffff',
         'neu-dark': '5px 5px 15px rgba(0, 0, 0, 0.3), -5px -5px 15px rgba(255, 255, 255, 0.05)',
-        'avatar': '0 2px 5px -1px rgba(0, 0, 0, 0.13)', 
+        'avatar': '0 2px 5px -1px rgba(0, 0, 0, 0.13), 0 0 0 1px rgba(0, 0, 0, 0.05)', 
         'toggle': '0 1px 2px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.15)',
-        'search': '0 2px 6px rgba(0, 0, 0, 0.08)'
+        'search': '0 2px 6px rgba(0, 0, 0, 0.08)',
+        'tag': '0 1px 2px rgba(0, 0, 0, 0.05)',
+        'profile-img': 'inset 0 0 0 1px rgba(0, 0, 0, 0.05), 0 2px 5px -1px rgba(0, 0, 0, 0.13)'
       },
       borderRadius: {
         'xl': '0.75rem',

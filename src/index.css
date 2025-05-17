@@ -68,12 +68,37 @@
   }
   
   .contact-card {
-    @apply card hover:shadow-md border border-surface-200 dark:border-surface-700 transition-all duration-200;
+    @apply card hover:shadow-card-hover border border-surface-200 dark:border-surface-700 transition-all duration-200;
   }
   
   .contact-card-content {
-    @apply p-5 flex flex-col gap-3;
+    @apply p-5 flex flex-col gap-4;
   }
+
+  .contact-card-section {
+    @apply flex flex-col gap-1.5;
+  }
+  
+  .contact-card-divider {
+    @apply border-t border-surface-200 dark:border-surface-700 my-2;
+  }
+  
+  .contact-profile-section {
+    @apply flex items-center justify-between mb-1;
+  }
+  
+  .contact-name {
+    @apply text-lg font-semibold text-surface-900 dark:text-white mb-0.5;
+  }
+  
+  .contact-position {
+    @apply text-surface-500 dark:text-surface-300 text-sm font-medium;
+  }
+
+  .contact-details-section {
+    @apply space-y-2;
+  }
+
   
   .contact-photo {
     @apply w-16 h-16 rounded-full object-cover border-2 border-white dark:border-surface-700 shadow-sm;
@@ -83,8 +108,17 @@
     @apply flex items-center justify-center bg-amber-100 dark:bg-amber-900/30 text-amber-500 dark:text-amber-400 rounded-full p-1;
   }
   
+  .star-favorite {
+    @apply flex items-center justify-center text-amber-500 rounded-full p-1 transition-all duration-200;
+  }
+  
+  .avatar-container {
+    @apply relative rounded-full p-1 bg-surface-100/50 dark:bg-surface-800/50 shadow-avatar;
+  }
+  
   .contact-info-row {
-    @apply flex items-center gap-2 text-surface-700 dark:text-surface-300 text-sm mb-1.5;
+    @apply flex items-center gap-2.5 text-surface-700 dark:text-surface-300 text-sm py-1 
+           hover:bg-surface-50 dark:hover:bg-surface-800/50 px-1 rounded-md transition-colors duration-150;
   }
   
   /* Enhanced search styling */

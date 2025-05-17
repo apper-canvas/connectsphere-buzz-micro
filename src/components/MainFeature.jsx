@@ -439,65 +439,79 @@ const MainFeature = ({ isOpen, onClose, searchQuery = '' }) => {
             onClick={() => viewContactDetails(contact)}
           >
             <div className="contact-card-content">
-              <div className="flex items-center justify-between">
+              {/* Profile Section with improved contrast and framing */}
+              <div className="contact-profile-section">
                 {/* Profile Image */}
-                <div className="avatar w-16 h-16 flex-shrink-0">
-                  {contact.profileImage ? (
-                    <img 
-                      src={contact.profileImage} 
-                      alt={`${contact.firstName} ${contact.lastName}`}
-                      className="w-full h-full object-cover rounded-full"
-                    />
-                  ) : (
-                    <UserCircle className="w-12 h-12" />
-                  )}
+                <div className="avatar-container">
+                  <div className="avatar w-16 h-16 flex-shrink-0">
+                    {contact.profileImage ? (
+                      <img 
+                        src={contact.profileImage} 
+                        alt={`${contact.firstName} ${contact.lastName}`}
+                        className="w-full h-full object-cover rounded-full shadow-profile-img"
+                      />
+                    ) : (
+                      <UserCircle className="w-12 h-12" />
+                    )}
+                  </div>
                 </div>
                 
-                {/* Favorite Indicator */}
+                {/* Star Favorite Indicator */}
                 {contact.isFavorite && (
-                  <div className="favorite-indicator">
-                    <Star className="w-5 h-5 fill-amber-400" />
+                  <div className="star-favorite">
+                    <Star className="w-6 h-6 fill-amber-400 stroke-amber-500" />
                   </div>
                 )}
               </div>
               
-              {/* Content */}
-              <div className="mt-2">
-                <h3 className="text-lg font-semibold truncate mb-1">
+              {/* Name and Position with increased contrast */}
+              <div className="contact-card-section">
+                <h3 className="contact-name truncate">
                   {contact.firstName} {contact.lastName}
                 </h3>
                 
                 {contact.jobTitle && contact.company && (
-                  <p className="text-surface-600 dark:text-surface-400 text-sm mb-3">
+                  <p className="contact-position">
                     {contact.jobTitle}, {contact.company}
                   </p>
                 )}
               </div>
               
-              {/* Contact Details */}
-              <div className="space-y-1">
+              {/* Divider between sections */}
+              <div className="contact-card-divider"></div>
+              
+              {/* Contact Details with consistent icons */}
+              <div className="contact-details-section">
                 {contact.phoneNumbers && contact.phoneNumbers.length > 0 && (
                   <div className="contact-info-row">
-                    <Phone className="w-4 h-4 text-primary flex-shrink-0" />
+                    <Phone className="w-4.5 h-4.5 text-primary flex-shrink-0" />
                     <span className="truncate">{contact.phoneNumbers[0].number}</span>
                   </div>
                 )}
                 
                 {contact.emails && contact.emails.length > 0 && (
                   <div className="contact-info-row">
-                    <Mail className="w-4 h-4 text-primary flex-shrink-0" />
+                    <Mail className="w-4.5 h-4.5 text-primary flex-shrink-0" />
                     <span className="truncate">{contact.emails[0].email}</span>
+                  </div>
+                )}
+
+                {contact.company && (
+                  <div className="contact-info-row">
+                    <Briefcase className="w-4.5 h-4.5 text-primary flex-shrink-0" />
+                    <span className="truncate">{contact.company}</span>
                   </div>
                 )}
               </div>
               
-              {/* Tags */}
+              {/* Tags with harmonized color palette */}
               {contact.tags && contact.tags.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 mt-2 pt-2 border-t border-surface-100 dark:border-surface-700">
+                <div className="flex flex-wrap gap-1.5 mt-1">
+                  <div className="contact-card-divider w-full"></div>
                   {contact.tags.map(tag => (
                     <span 
                       key={tag} 
-                      className={`px-2 py-0.5 text-xs rounded-full ${getTagColor(tag)}`}
+                      className={`px-2.5 py-1 text-xs rounded-full ${getTagColor(tag)} shadow-tag font-medium transition-transform hover:scale-105`}
                     >
                       {tag}
                     </span>
@@ -959,7 +973,7 @@ const MainFeature = ({ isOpen, onClose, searchQuery = '' }) => {
                           {selectedContact.firstName} {selectedContact.lastName}
                         </h3>
                         {selectedContact.isFavorite && (
-                          <Star className="w-5 h-5 text-amber-400 fill-amber-400" />
+                          <Star className="w-6 h-6 text-amber-400 fill-amber-400" />
                         )}
                       </div>
                       
@@ -980,7 +994,7 @@ const MainFeature = ({ isOpen, onClose, searchQuery = '' }) => {
                           {selectedContact.tags.map(tag => (
                             <span 
                               key={tag} 
-                              className={`px-2 py-0.5 text-xs rounded-full ${getTagColor(tag)}`}
+                              className={`px-2.5 py-1 text-xs rounded-full ${getTagColor(tag)} shadow-tag font-medium`}
                             >
                               {tag}
                             </span>

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { toast } from 'react-toastify';
+import { toast } from 'react-toastify'; 
 import { getIcon } from '../utils/iconUtils';
 
 const MainFeature = ({ isOpen, onClose, searchQuery = '' }) => {
@@ -21,6 +21,7 @@ const MainFeature = ({ isOpen, onClose, searchQuery = '' }) => {
   const Star = getIcon('Star');
   const Users = getIcon('Users');
   const Edit = getIcon('Edit');
+  const ArrowUpDown = getIcon('ArrowUpDown');
   
   // Contact form state
   const [formData, setFormData] = useState({
@@ -50,6 +51,7 @@ const MainFeature = ({ isOpen, onClose, searchQuery = '' }) => {
       phoneNumbers: [{ type: 'mobile', number: '(555) 123-4567', isPrimary: true }],
       emails: [{ type: 'work', email: 'emma.j@techglobal.com', isPrimary: true }],
       tags: ['Team', 'Client'],
+      timestamp: new Date('2023-06-15').getTime(),
       isFavorite: true,
       profileImage: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80'
     },
@@ -62,6 +64,7 @@ const MainFeature = ({ isOpen, onClose, searchQuery = '' }) => {
       phoneNumbers: [{ type: 'mobile', number: '(555) 987-6543', isPrimary: true }],
       emails: [{ type: 'personal', email: 'marcus.liang@gmail.com', isPrimary: true }],
       tags: ['Tech', 'Friend'],
+      timestamp: new Date('2023-08-22').getTime(),
       isFavorite: false,
       profileImage: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80'
     },
@@ -74,6 +77,7 @@ const MainFeature = ({ isOpen, onClose, searchQuery = '' }) => {
       phoneNumbers: [{ type: 'mobile', number: '(555) 234-5678', isPrimary: true }],
       emails: [{ type: 'work', email: 'sophia@creativedesign.com', isPrimary: true }],
       tags: ['Design', 'Client'],
+      timestamp: new Date('2023-11-05').getTime(),
       isFavorite: true,
       profileImage: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80'
     }
@@ -85,6 +89,8 @@ const MainFeature = ({ isOpen, onClose, searchQuery = '' }) => {
   const [isDetailView, setIsDetailView] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   
+  // Sort state
+  const [sortOption, setSortOption] = useState('nameAsc'); // Default sort by name A-Z
   // Available tags
   const availableTags = ['Team', 'Client', 'Friend', 'Family', 'Tech', 'Design', 'Important'];
 
@@ -160,6 +166,22 @@ const MainFeature = ({ isOpen, onClose, searchQuery = '' }) => {
     setFormData({ ...formData, isFavorite: !formData.isFavorite });
   };
   
+  // Handle sort change
+  const handleSortChange = (option) => {
+    setSortOption(option);
+  };
+  
+  // Sort contacts
+  const sortContacts = (contacts) => {
+    return [...contacts].sort((a, b) => {
+      if (sortOption === 'nameAsc') return `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`);
+      if (sortOption === 'nameDesc') return `${b.firstName} ${b.lastName}`.localeCompare(`${a.firstName} ${a.lastName}`);
+      if (sortOption === 'dateOldest') return a.timestamp - b.timestamp;
+      if (sortOption === 'dateNewest') return b.timestamp - a.timestamp;
+      return 0;
+    });
+  };
+  
   // Form validation
   const validateForm = () => {
     if (!formData.firstName || !formData.lastName) {
@@ -201,7 +223,8 @@ const MainFeature = ({ isOpen, onClose, searchQuery = '' }) => {
       const newContact = {
         ...formData,
         id: Date.now().toString(),
-        profileImage: formData.profileImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(formData.firstName)}+${encodeURIComponent(formData.lastName)}&background=4361ee&color=fff`
+        profileImage: formData.profileImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(formData.firstName)}+${encodeURIComponent(formData.lastName)}&background=4361ee&color=fff`,
+        timestamp: Date.now()
       };
       
       setContacts([...contacts, newContact]);
@@ -280,6 +303,9 @@ const MainFeature = ({ isOpen, onClose, searchQuery = '' }) => {
     return true;
   });
   
+  // Apply sorting to filtered contacts
+  const sortedAndFilteredContacts = sortContacts(filteredContacts);
+  
   // Close contact details
   const closeDetails = () => {
     setIsDetailView(false);
@@ -304,18 +330,60 @@ const MainFeature = ({ isOpen, onClose, searchQuery = '' }) => {
   return (
     <div className="space-y-8">
       {/* Filters */}
-      <div className="space-y-3 mb-6">
-        <div className="flex items-center justify-between">
+      <div className="space-y-3 mb-6"> 
+        <div className="flex items-center justify-between flex-wrap gap-2">
           <h3 className="text-lg font-medium text-surface-800 dark:text-surface-200 flex items-center">
             <span>Contacts</span>
-            <span className="filter-counter">{filteredContacts.length}</span>
+            <span className="filter-counter">{sortedAndFilteredContacts.length}</span>
           </h3>
+          
+          {/* Sort Dropdown */}
+          <div className="sort-dropdown relative">
+            <button
+              className="sort-dropdown-button"
+              type="button"
+            >
+              <ArrowUpDown className="w-4 h-4 mr-1" />
+              <span>
+                {sortOption === 'nameAsc' && 'Sort: Name A-Z'}
+                {sortOption === 'nameDesc' && 'Sort: Name Z-A'}
+                {sortOption === 'dateOldest' && 'Sort: Oldest First'}
+                {sortOption === 'dateNewest' && 'Sort: Newest First'}
+              </span>
+            </button>
+            <div className="sort-dropdown-menu">
+              <button 
+                className={`sort-option ${sortOption === 'nameAsc' ? 'active' : ''}`}
+                onClick={() => handleSortChange('nameAsc')}
+              >
+                Name (A-Z)
+              </button>
+              <button 
+                className={`sort-option ${sortOption === 'nameDesc' ? 'active' : ''}`}
+                onClick={() => handleSortChange('nameDesc')}
+              >
+                Name (Z-A)
+              </button>
+              <button 
+                className={`sort-option ${sortOption === 'dateOldest' ? 'active' : ''}`}
+                onClick={() => handleSortChange('dateOldest')}
+              >
+                Date (Oldest first)
+              </button>
+              <button 
+                className={`sort-option ${sortOption === 'dateNewest' ? 'active' : ''}`}
+                onClick={() => handleSortChange('dateNewest')}
+              >
+                Date (Newest first)
+              </button>
+            </div>
+          </div>
         </div>
         
         <div className="flex flex-wrap gap-3">
           {/* All contacts filter */}
           <div className="filter-group">
-            <button 
+            <button
               className={`filter-toggle ${filterTag === '' ? 'filter-toggle-active' : 'filter-toggle-inactive'}`}
               onClick={() => setFilterTag('')}
             >
@@ -350,18 +418,18 @@ const MainFeature = ({ isOpen, onClose, searchQuery = '' }) => {
       
       {/* Contact Stats */}
       <div className="mb-4 text-surface-600 dark:text-surface-400 text-sm">
-        {filteredContacts.length === 0 ? (
+        {sortedAndFilteredContacts.length === 0 ? (
           <span>No contacts found</span>
         ) : filterTag ? (
-          <span>Showing {filteredContacts.length} contacts tagged with "{filterTag}"</span>
+          <span>Showing {sortedAndFilteredContacts.length} contacts tagged with "{filterTag}"</span>
         ) : (
-          <span>Showing all {filteredContacts.length} contacts</span>
+          <span>Showing all {sortedAndFilteredContacts.length} contacts</span>
         )}
       </div>
       
       {/* Contact List */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filteredContacts.map(contact => (
+        {sortedAndFilteredContacts.map(contact => (
           <motion.div
             key={contact.id}
             initial={{ opacity: 0, y: 10 }}
@@ -442,7 +510,7 @@ const MainFeature = ({ isOpen, onClose, searchQuery = '' }) => {
       </div>
       
       {/* No contacts message */}
-      {filteredContacts.length === 0 && (
+      {sortedAndFilteredContacts.length === 0 && (
         <div className="flex flex-col items-center justify-center py-10 text-center">
           <div className="w-16 h-16 rounded-full bg-surface-200 dark:bg-surface-700 flex items-center justify-center mb-4">
             <UserCircle className="w-8 h-8 text-surface-600 dark:text-surface-400" />

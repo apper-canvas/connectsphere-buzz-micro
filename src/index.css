@@ -86,6 +86,16 @@
   .contact-info-row {
     @apply flex items-center gap-2 text-surface-700 dark:text-surface-300 text-sm mb-1.5;
   }
+  
+  /* Enhanced search styling */
+  .search-container input {
+    @apply focus:bg-white;
+  }
+  
+  .search-container input:focus + div svg,
+  .search-container:hover input + div svg {
+    @apply text-primary-dark;
+  }
 }
 
 /* Utility classes */

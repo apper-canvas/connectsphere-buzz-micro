@@ -41,7 +41,8 @@ export default {
         'card-hover': '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1)',
         'neu-light': '5px 5px 15px #d1d9e6, -5px -5px 15px #ffffff',
         'neu-dark': '5px 5px 15px rgba(0, 0, 0, 0.3), -5px -5px 15px rgba(255, 255, 255, 0.05)',
-        'avatar': '0 2px 5px -1px rgba(0, 0, 0, 0.13)'
+        'avatar': '0 2px 5px -1px rgba(0, 0, 0, 0.13)',
+        'search': '0 2px 6px rgba(0, 0, 0, 0.08)'
       },
       borderRadius: {
         'xl': '0.75rem',

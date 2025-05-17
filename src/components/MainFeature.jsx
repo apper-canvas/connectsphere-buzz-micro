@@ -18,6 +18,7 @@ const MainFeature = ({ isOpen, onClose }) => {
   const Save = getIcon('Save');
   const Trash = getIcon('Trash');
   const Star = getIcon('Star');
+  const Edit = getIcon('Edit');
   
   // Contact form state
   const [formData, setFormData] = useState({
@@ -391,6 +392,7 @@ const MainFeature = ({ isOpen, onClose }) => {
             onClick={() => { setFilterTag(''); handleOpenContactForm(); }}
             className="btn-primary flex items-center gap-2"
           >
+            <Plus className="w-5 h-5" />
             <Plus className="w-5 h-5" />
             Add New Contact
           </button>
@@ -796,7 +798,7 @@ const MainFeature = ({ isOpen, onClose }) => {
                       onClick={() => editContact(selectedContact)}
                       className="p-2 rounded-full hover:bg-surface-200 dark:hover:bg-surface-700 transition-colors text-primary"
                     >
-                      <getIcon('Edit') className="w-5 h-5" />
+                      <Edit className="w-5 h-5" />
                     </button>
                     <button 
                       onClick={closeDetails}
@@ -986,7 +988,7 @@ const MainFeature = ({ isOpen, onClose }) => {
                     onClick={() => editContact(selectedContact)}
                     className="btn-primary flex items-center gap-2"
                   >
-                    <getIcon('Edit') className="w-5 h-5" />
+                    <Edit className="w-5 h-5" />
                     <span>Edit Contact</span>
                   </button>
                 </div>

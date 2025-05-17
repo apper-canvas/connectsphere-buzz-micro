@@ -277,7 +277,7 @@ const MainFeature = ({ isOpen, onClose, searchQuery = '' }) => {
     setSelectedContact(contact);
     setIsEditing(true);
     setIsDetailView(false);
-    onClose(); // Close detail view
+    onClose(true); // Open edit form modal
   };
   
   // Search and filter contacts

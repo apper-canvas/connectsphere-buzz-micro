@@ -5,7 +5,3 @@ export const getIcon = (iconName) => {
     ? Icons[iconName] 
     : Icons.Smile;
 };
-  ArrowUpDown,
-  LogOut
-  ArrowUpDown,
-  LogOut

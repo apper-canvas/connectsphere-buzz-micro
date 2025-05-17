@@ -356,7 +356,7 @@ const MainFeature = ({ isOpen, onClose, searchQuery = '' }) => {
           <span>Showing {filteredContacts.length} contacts tagged with "{filterTag}"</span>
         ) : (
           <span>Showing all {filteredContacts.length} contacts</span>
-        ))}
+        )}
       </div>
       
       {/* Contact List */}

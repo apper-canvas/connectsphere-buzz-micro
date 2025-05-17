@@ -1,7 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { motion } from 'framer-motion';
-import { Search, Plus } from 'lucide-react';
+import { Search, Plus, LogOut } from 'lucide-react';
 import { getIcon } from '../utils/iconUtils';
+import { useSelector } from 'react-redux';
+import { AuthContext } from '../App';
+import { useNavigate } from 'react-router-dom';
 import MainFeature from '../components/MainFeature';
 
 // Hero image URL from Unsplash
@@ -9,9 +12,19 @@ const heroImg = "https://images.unsplash.com/photo-1522071820081-009f0129c71c?au
 
 const Home = () => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [isContactFormOpen, setIsContactFormOpen] = useState(false);
+  const [isContactFormOpen, setIsContactFormOpen] = useState(false); 
   const SearchIcon = getIcon('Search');
   const PlusIcon = getIcon('Plus');
+  const LogOutIcon = getIcon('LogOut');
+  
+  // Get authentication context and user state
+  const { logout } = useContext(AuthContext);
+  const { user, isAuthenticated } = useSelector(state => state.user);
+  const navigate = useNavigate();
+  
+  useEffect(() => {
+    if (!isAuthenticated) navigate('/login');
+  }, [isAuthenticated, navigate]);
   
   const handleOpenContactForm = () => {
     setIsContactFormOpen(true);
@@ -42,6 +55,18 @@ const Home = () => {
                 </svg>
               </motion.div>
               <h1 className="text-2xl font-bold text-white">ConnectSphere</h1>
+              </div>
+            
+            <div className="flex items-center">
+              {isAuthenticated && (
+                <button
+                  onClick={logout}
+                  className="ml-4 text-white hover:text-gray-200 flex items-center gap-2"
+                >
+                  <LogOutIcon className="h-5 w-5" />
+                  <span className="hidden sm:inline">Logout</span>
+                </button>
+              )}
             </div>
             
             <div className="search-container relative w-full md:w-auto md:min-w-[320px] flex-shrink-0">

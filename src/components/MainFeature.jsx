@@ -1,10 +1,30 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion'; 
 import { toast } from 'react-toastify'; 
+import { useSelector } from 'react-redux';
 import { getIcon } from '../utils/iconUtils';
+import { fetchContacts, createContact, updateContact, deleteContact } from '../services/contactService';
 
 const MainFeature = ({ isOpen, onClose, searchQuery = '' }) => {
-  // Icons using getIcon utility
+  // Authentication state
+  const { user, isAuthenticated } = useSelector(state => state.user);
+  
+  // Loading states
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  
+  // Error state
+  const [error, setError] = useState(null);
+  
+  // Success state
+  const [success, setSuccess] = useState(false);
+  
+  // Reset states for new operations
+  const resetStates = () => {
+    setError(null);
+    setSuccess(false);
+  };
   const User = getIcon('User');
   const Phone = getIcon('Phone');
   const Mail = getIcon('Mail');
@@ -40,48 +60,9 @@ const MainFeature = ({ isOpen, onClose, searchQuery = '' }) => {
     isFavorite: false
   });
   
-  // Mock contacts for display
-  const [contacts, setContacts] = useState([
-    {
-      id: '1',
-      firstName: 'Emma',
-      lastName: 'Johnson',
-      company: 'TechGlobal Inc.',
-      jobTitle: 'Product Manager',
-      phoneNumbers: [{ type: 'mobile', number: '(555) 123-4567', isPrimary: true }],
-      emails: [{ type: 'work', email: 'emma.j@techglobal.com', isPrimary: true }],
-      tags: ['Team', 'Client'],
-      timestamp: new Date('2023-06-15').getTime(),
-      isFavorite: true,
-      profileImage: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80'
-    },
-    {
-      id: '2',
-      firstName: 'Marcus',
-      lastName: 'Liang',
-      company: 'Innovate Solutions',
-      jobTitle: 'Software Engineer',
-      phoneNumbers: [{ type: 'mobile', number: '(555) 987-6543', isPrimary: true }],
-      emails: [{ type: 'personal', email: 'marcus.liang@gmail.com', isPrimary: true }],
-      tags: ['Tech', 'Friend'],
-      timestamp: new Date('2023-08-22').getTime(),
-      isFavorite: false,
-      profileImage: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80'
-    },
-    {
-      id: '3',
-      firstName: 'Sophia',
-      lastName: 'Rodriguez',
-      company: 'Creative Design Studios',
-      jobTitle: 'UX Designer',
-      phoneNumbers: [{ type: 'mobile', number: '(555) 234-5678', isPrimary: true }],
-      emails: [{ type: 'work', email: 'sophia@creativedesign.com', isPrimary: true }],
-      tags: ['Design', 'Client'],
-      timestamp: new Date('2023-11-05').getTime(),
-      isFavorite: true,
-      profileImage: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80'
-    }
-  ]);
+  // Contact data state
+  const [contacts, setContacts] = useState([]);
+  const [contactCount, setContactCount] = useState(0);
   
   // Filter state
   const [filterTag, setFilterTag] = useState('');
@@ -95,6 +76,39 @@ const MainFeature = ({ isOpen, onClose, searchQuery = '' }) => {
   // Available tags
   const availableTags = ['Team', 'Client', 'Friend', 'Family', 'Tech', 'Design', 'Important'];
 
+  // Fetch contacts from the database
+  const loadContacts = async () => {
+    if (!isAuthenticated) return;
+    
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      const options = {
+        searchQuery: searchQuery,
+        filterTag: filterTag,
+        sortField: sortOption.includes('name') ? 'firstName' : 'CreatedOn',
+        sortDirection: sortOption.includes('Asc') || sortOption.includes('Oldest') ? 'asc' : 'desc'
+      };
+      
+      const data = await fetchContacts(options);
+      
+      // Transform server data to match our component expectations
+      const transformedData = data.map(contact => ({
+        ...contact,
+        id: contact.Id.toString(),
+        timestamp: new Date(contact.CreatedOn).getTime()
+      }));
+      
+      setContacts(transformedData);
+      setContactCount(transformedData.length);
+    } catch (error) {
+      setError('Failed to load contacts. Please try again.');
+      toast.error('Failed to load contacts');
+    } finally {
+      setIsLoading(false);
+    }
+  };
   // Function to clear form data
   useEffect(() => {
     // Effect for initializing form data when in edit mode
@@ -123,6 +137,24 @@ const MainFeature = ({ isOpen, onClose, searchQuery = '' }) => {
     }
     
     // Cleanup function when component unmounts
+    return () => {
+      // Reset all modal-related states when component unmounts
+      setIsEditMode(false);
+      setIsNewContactMode(false);
+      setSelectedContact(null);
+      setIsDetailView(false);
+    };
+  }, [isOpen]);
+  
+  // Load contacts when component mounts or dependencies change
+  useEffect(() => {
+    if (isAuthenticated) {
+      loadContacts();
+    }
+  }, [isAuthenticated, searchQuery, filterTag, sortOption]);
+  
+  // Clean up on unmount
+  useEffect(() => {
     return () => {
       // Reset all modal-related states when component unmounts
       setIsEditMode(false);
@@ -249,15 +281,13 @@ const MainFeature = ({ isOpen, onClose, searchQuery = '' }) => {
   // Form validation
   const validateForm = () => {
     if (!formData.firstName || !formData.lastName) {
-      toast.error("First name and last name are required");
+      toast.error("First name and last name are required.");
       return false;
     }
-    
     if (formData.phoneNumbers.some(phone => phone.number && !/^[\d\s()+-]+$/.test(phone.number))) {
-      toast.error("Phone number contains invalid characters");
+      toast.error("Phone number contains invalid characters.");
       return false;
     }
-    
     if (formData.emails.some(email => email.email && !/^\S+@\S+\.\S+$/.test(email.email))) {
       toast.error("Invalid email format");
       return false;
@@ -265,11 +295,11 @@ const MainFeature = ({ isOpen, onClose, searchQuery = '' }) => {
 
     // Validate the operation mode
     if (isEditMode && !selectedContact) {
-      toast.error("Cannot edit contact: No contact selected");
+      toast.error("Cannot edit contact: No contact selected.");
       return false;
     }
     
-    if (isNewContactMode && isEditMode) {
+    if (isNewContactMode && isEditMode) { 
       toast.error("Invalid operation mode: Cannot be in both edit and new contact mode");
       return false;
     }
@@ -278,57 +308,98 @@ const MainFeature = ({ isOpen, onClose, searchQuery = '' }) => {
   };
   
   // Handle form submission
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     if (!validateForm()) {
       return;
     }
+    
+    setIsSubmitting(true);
+    resetStates();
 
-    // If editing, update the contact
-    if (isEditMode && selectedContact) {
-      const updatedContacts = contacts.map(contact => 
-        contact.id === selectedContact.id ? { ...formData, id: selectedContact.id } : contact
-      );
-      setContacts(updatedContacts);
-      toast.success("Contact updated successfully!");
-      setIsEditMode(false); 
-    } 
-    else if (isNewContactMode) {
-      // Create new contact
-      const newContact = {
-        ...formData,
-        id: Date.now().toString(),
-        profileImage: formData.profileImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(formData.firstName)}+${encodeURIComponent(formData.lastName)}&background=4361ee&color=fff`,
-        timestamp: Date.now()
+    try {
+      // Convert form data to match database structure
+      const contactData = {
+        ...formData
       };
       
-      setContacts([...contacts, newContact]);
-      toast.success("Contact created successfully!");
-      setIsNewContactMode(false);
-    }
-    else {
-      // Should never reach here due to validation, but handle as fallback
-      toast.error("Invalid operation mode. Please try again.");
+      if (typeof contactData.phoneNumbers === 'object' && !Array.isArray(contactData.phoneNumbers)) {
+        contactData.phoneNumbers = JSON.stringify(contactData.phoneNumbers);
+      }
+      
+      if (typeof contactData.emails === 'object' && !Array.isArray(contactData.emails)) {
+        contactData.emails = JSON.stringify(contactData.emails);
+      }
+      
+      // If tags is an array, convert to comma-separated string
+      if (Array.isArray(contactData.tags)) {
+        contactData.tags = contactData.tags.join(',');
+      }
+      
+      // If editing, update the contact
+      if (isEditMode && selectedContact) {
+        contactData.Id = selectedContact.Id || selectedContact.id;
+        const updatedContact = await updateContact(contactData);
+        
+        toast.success("Contact updated successfully!");
+        setSuccess(true);
+        setIsEditMode(false);
+      } 
+      else if (isNewContactMode) {
+        // Generate profileImage URL if not provided
+        if (!contactData.profileImage) {
+          contactData.profileImage = `https://ui-avatars.com/api/?name=${encodeURIComponent(formData.firstName)}+${encodeURIComponent(formData.lastName)}&background=4361ee&color=fff`;
+        }
+        
+        const newContact = await createContact(contactData);
+        
+        toast.success("Contact created successfully!");
+        setSuccess(true);
+        setIsNewContactMode(false);
+      }
+      else {
+        // Should never reach here due to validation, but handle as fallback
+        toast.error("Invalid operation mode. Please try again.");
+        setIsEditMode(false);
+        setIsNewContactMode(false);
+      }
+      
+      // Reset form
+      setFormData(clearFormData());
       setIsEditMode(false);
       setIsNewContactMode(false);
+      
+      // Reload contacts
+      loadContacts();
+      
+      onClose();
+    } catch (error) {
+      console.error('Error saving contact:', error);
+      setError('Failed to save contact. Please try again.');
+      toast.error(error.message || 'Failed to save contact');
+    } finally {
+      setIsSubmitting(false);
     }
-    
-    // Reset form
-    setFormData(clearFormData());
-    setIsEditMode(false);
-    setIsNewContactMode(false);
-    
-    onClose();
   };
   
   // Delete contact
-  const handleDeleteContact = (id) => {
-    const updatedContacts = contacts.filter(contact => contact.id !== id);
-    setContacts(updatedContacts);
-    setSelectedContact(null);
-    setIsDetailView(false);
-    toast.success("Contact deleted successfully!");
+  const handleDeleteContact = async (id) => {
+    if (!confirm('Are you sure you want to delete this contact?')) return;
+    
+    try {
+      setIsDeleting(true);
+      await deleteContact(id);
+      toast.success("Contact deleted successfully!");
+      setSelectedContact(null);
+      setIsDetailView(false);
+      loadContacts();
+    } catch (error) {
+      console.error('Error deleting contact:', error);
+      toast.error('Failed to delete contact');
+    } finally {
+      setIsDeleting(false);
+    }
   };
   
   // View contact details
@@ -354,16 +425,6 @@ const MainFeature = ({ isOpen, onClose, searchQuery = '' }) => {
     onClose(true); // Open edit form modal
   };
 
-  // Cleanup function for all states when component unmounts
-  useEffect(() => {
-    return () => {
-      setSelectedContact(null);
-      setIsDetailView(false);
-      setIsEditMode(false);
-      setFormData(clearFormData());
-    };
-  }, []);
-  
   // Search and filter contacts
   const filteredContacts = contacts.filter(contact => {
     // First filter by tag if a tag is selected
@@ -425,6 +486,11 @@ const MainFeature = ({ isOpen, onClose, searchQuery = '' }) => {
     
     return colors[tag] || 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
   };
+  
+  // Loading indicator for initial data load
+  if (isLoading && contacts.length === 0) {
+    return <div className="py-10 text-center">Loading contacts...</div>;
+  }
   
   return (
     <div className="space-y-8">
@@ -519,13 +585,13 @@ const MainFeature = ({ isOpen, onClose, searchQuery = '' }) => {
       <div className="mb-4 text-surface-600 dark:text-surface-400 text-sm">
         {sortedAndFilteredContacts.length === 0 ? (
           <span>No contacts found</span>
-        ) : filterTag ? (
-          <span>Showing {sortedAndFilteredContacts.length} contacts tagged with "{filterTag}"</span>
+        ) : filterTag ? ( 
+          <span>Showing {sortedAndFilteredContacts.length} contacts tagged with "{filterTag}"</span> 
         ) : (
           <span>Showing all {sortedAndFilteredContacts.length} contacts</span>
         )}
       </div>
-      
+
       {/* Contact List */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {sortedAndFilteredContacts.map(contact => (
@@ -543,7 +609,7 @@ const MainFeature = ({ isOpen, onClose, searchQuery = '' }) => {
                 {/* Profile Image */}
                 <div className="avatar-container">
                   <div className="avatar w-16 h-16 flex-shrink-0">
-                    {contact.profileImage ? (
+                    {contact.profileImage ? ( 
                       <img 
                         src={contact.profileImage} 
                         alt={`${contact.firstName} ${contact.lastName}`}
@@ -627,7 +693,7 @@ const MainFeature = ({ isOpen, onClose, searchQuery = '' }) => {
         <div className="flex flex-col items-center justify-center py-10 text-center">
           <div className="w-16 h-16 rounded-full bg-surface-200 dark:bg-surface-700 flex items-center justify-center mb-4">
             <UserCircle className="w-8 h-8 text-surface-600 dark:text-surface-400" />
-          </div>
+          </div> 
           <h3 className="text-xl font-semibold mb-2">No contacts found</h3>
           <p className="text-surface-600 dark:text-surface-400 mb-4">
             {filterTag ? `No contacts with the tag "${filterTag}"` : "You haven't added any contacts yet"}
@@ -1014,10 +1080,16 @@ const MainFeature = ({ isOpen, onClose, searchQuery = '' }) => {
                   </button>
                   <button
                     type="submit"
-                    className="btn-primary flex items-center gap-2"
+                    className={`btn-primary flex items-center gap-2 ${isSubmitting ? 'opacity-75 cursor-not-allowed' : ''}`}
+                    disabled={isSubmitting}
                   >
-                    <Save className="w-5 h-5 text-white" />
-                    {isEditMode ? "Update Contact" : "Save Contact"}
+                    {isSubmitting ? (
+                      <>
+                        <span className="animate-spin inline-block h-5 w-5 border-2 border-white border-t-transparent rounded-full"></span>
+                        <span>{isEditMode ? "Updating..." : "Saving..."}</span>
+                      </>
+                    ) : (<><Save className="w-5 h-5 text-white" />
+                    {isEditMode ? "Update Contact" : "Save Contact"}</>)}
                   </button>
                 </div>
               </form>
@@ -1234,13 +1306,19 @@ const MainFeature = ({ isOpen, onClose, searchQuery = '' }) => {
                 {/* Actions */}
                 <div className="p-6 border-t border-surface-200 dark:border-surface-700 flex justify-between">
                   <button
-                    onClick={() => handleDeleteContact(selectedContact.id)}
-                    className="flex items-center gap-2 px-4 py-2 rounded-lg text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                    onClick={() => handleDeleteContact(selectedContact.id || selectedContact.Id)}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors ${isDeleting ? 'opacity-75 cursor-not-allowed' : ''}`}
+                    disabled={isDeleting}
                   >
-                    <Trash className="w-5 h-5" />
-                    <span>Delete Contact</span>
+                    {isDeleting ? (
+                      <>
+                        <span className="animate-spin inline-block h-5 w-5 border-2 border-red-600 border-t-transparent rounded-full"></span>
+                        <span>Deleting...</span>
+                      </>
+                    ) : (<><Trash className="w-5 h-5" />
+                    <span>Delete Contact</span></>)}
                   </button>
-                  
+                   
                   <button
                     onClick={() => editContact(selectedContact)}
                     className="flex items-center gap-2 px-4 py-2 rounded-lg text-primary hover:bg-primary-light/20 dark:hover:bg-primary-dark/20 transition-colors"

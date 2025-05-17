@@ -88,8 +88,8 @@ const MainFeature = ({ isOpen, onClose, searchQuery = '' }) => {
   // Available tags
   const availableTags = ['Team', 'Client', 'Friend', 'Family', 'Tech', 'Design', 'Important'];
 
-  // Function to handle opening the contact form
-  const handleOpenContactForm = () => onClose();
+  // Function to handle opening the contact form from the empty state
+  const handleOpenContactForm = () => onClose(true);
   
   // Handle input change
   const handleInputChange = (e) => {
@@ -452,7 +452,7 @@ const MainFeature = ({ isOpen, onClose, searchQuery = '' }) => {
             {filterTag ? `No contacts with the tag "${filterTag}"` : "You haven't added any contacts yet"}
           </p>
           <button 
-            onClick={() => { setFilterTag(''); handleOpenContactForm(); }}
+            onClick={() => { setFilterTag(''); onClose(true); }}
             className="btn-primary flex items-center gap-2"
           >
             <Plus className="w-5 h-5" />

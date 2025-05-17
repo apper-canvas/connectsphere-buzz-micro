@@ -117,9 +117,10 @@ const MainFeature = ({ isOpen, onClose, searchQuery = '' }) => {
   // Function to handle opening a new contact form
   const handleOpenContactForm = () => {
     // Reset form data when creating a new contact
-    setFormData(clearFormData());
+    const emptyForm = clearFormData();
+    setFormData(emptyForm);
     setIsEditMode(false);
-    setSelectedContact(null);
+    setSelectedContact(null); 
     setIsNewContactMode(true);
     onClose(true);
   };

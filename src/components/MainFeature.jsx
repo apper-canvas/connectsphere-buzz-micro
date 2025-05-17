@@ -1,1333 +1,407 @@
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion'; 
-import { toast } from 'react-toastify'; 
-import { useSelector } from 'react-redux';
-import { getIcon } from '../utils/iconUtils';
-import { fetchContacts, createContact, updateContact, deleteContact } from '../services/contactService';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ChevronDown, X, ArrowDownUp, Check, Star, Mail, Phone } from 'lucide-react';
+import { toast } from 'react-toastify';
+import { getAllContacts, getFavoriteContacts, toggleFavoriteContact, addNewContact } from '../services/contactService';
 
-const MainFeature = ({ isOpen, onClose, searchQuery = '' }) => {
-  // Authentication state
-  const { user, isAuthenticated } = useSelector(state => state.user);
+const MainFeature = ({ isOpen, onClose, searchQuery }) => {
+  const [contacts, setContacts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [filteredContacts, setFilteredContacts] = useState([]);
+  const [activeFilter, setActiveFilter] = useState('all');
+  const [sortField, setSortField] = useState('name');
+  const [sortDirection, setSortDirection] = useState('asc');
+  const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
   
-  // Loading states
-  const [isLoading, setIsLoading] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-  
-  // Error state
-  const [error, setError] = useState(null);
-  
-  // Success state
-  const [success, setSuccess] = useState(false);
-  
-  // Reset states for new operations
-  const resetStates = () => {
-    setError(null);
-    setSuccess(false);
-  };
-  const User = getIcon('User');
-  const Phone = getIcon('Phone');
-  const Mail = getIcon('Mail');
-  const Briefcase = getIcon('Briefcase');
-  const UserCircle = getIcon('UserCircle');
-  const X = getIcon('X');
-  const MapPin = getIcon('MapPin');
-  const Calendar = getIcon('Calendar');
-  const Globe = getIcon('Globe');
-  const Plus = getIcon('Plus');
-  const Tag = getIcon('Tag');
-  const Save = getIcon('Save');
-  const Trash = getIcon('Trash');
-  const Star = getIcon('Star');
-  const Users = getIcon('Users');
-  const Edit = getIcon('Edit');
-  const ArrowUpDown = getIcon('ArrowUpDown');
-  
-  // Contact form state
-  const [formData, setFormData] = useState({
+  // Form state for adding a new contact
+  const [newContact, setNewContact] = useState({
     firstName: '',
     lastName: '',
-    nickname: '',
-    phoneNumbers: [{ type: 'mobile', number: '', isPrimary: true }],
-    emails: [{ type: 'personal', email: '', isPrimary: true }],
+    emails: '',
+    phoneNumbers: '',
     company: '',
     jobTitle: '',
-    birthday: '',
-    website: '',
-    address: '',
     tags: [],
-    notes: '',
     isFavorite: false
   });
-  
-  // Contact data state
-  const [contacts, setContacts] = useState([]);
-  const [contactCount, setContactCount] = useState(0);
-  
-  // Filter state
-  const [filterTag, setFilterTag] = useState('');
-  const [selectedContact, setSelectedContact] = useState(null);
-  const [isDetailView, setIsDetailView] = useState(false);
-  const [isEditMode, setIsEditMode] = useState(false);
-  const [isNewContactMode, setIsNewContactMode] = useState(false);
-  
-  // Sort state
-  const [sortOption, setSortOption] = useState('nameAsc'); // Default sort by name A-Z
-  // Available tags
-  const availableTags = ['Team', 'Client', 'Friend', 'Family', 'Tech', 'Design', 'Important'];
 
-  // Fetch contacts from the database
-  const loadContacts = async () => {
-    if (!isAuthenticated) return;
-    
-    try {
-      setIsLoading(true);
-      setError(null);
-      
-      const options = {
-        searchQuery: searchQuery,
-        filterTag: filterTag,
-        sortField: sortOption.includes('name') ? 'firstName' : 'CreatedOn',
-        sortDirection: sortOption.includes('Asc') || sortOption.includes('Oldest') ? 'asc' : 'desc'
-      };
-      
-      const data = await fetchContacts(options);
-      
-      // Transform server data to match our component expectations
-      const transformedData = data.map(contact => ({
-        ...contact,
-        id: contact.Id.toString(),
-        timestamp: new Date(contact.CreatedOn).getTime()
-      }));
-      
-      setContacts(transformedData);
-      setContactCount(transformedData.length);
-    } catch (error) {
-      setError('Failed to load contacts. Please try again.');
-      toast.error('Failed to load contacts');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  // Function to clear form data
   useEffect(() => {
-    // Effect for initializing form data when in edit mode
-    if (isEditMode && selectedContact) {
-      setFormData({
-        ...selectedContact, 
-        phoneNumbers: selectedContact.phoneNumbers || [{ type: 'mobile', number: '', isPrimary: true }], 
-        emails: selectedContact.emails || [{ type: 'personal', email: '', isPrimary: true }],
-        tags: selectedContact.tags || []
-      });
-    }
-    
-    // Cleanup function to reset state when component unmounts
-    return () => {
-      // No need to reset states here as it would cause issues during normal use
+    const fetchContacts = async () => {
+      try {
+        setLoading(true);
+        const data = await getAllContacts();
+        setContacts(data);
+        setFilteredContacts(data);
+      } catch (error) {
+        console.error("Error fetching contacts:", error);
+        toast.error("Failed to load contacts");
+      } finally {
+        setLoading(false);
+      }
     };
-  }, [isEditMode, selectedContact]);
-  
-  // Effect for modal state handling and cleanup
+
+    fetchContacts();
+  }, []);
+
+  // Filter by searchQuery
   useEffect(() => {
-    // If modal is closed, reset certain states
-    if (!isOpen) {
-      setFormData(clearFormData());
-      setIsEditMode(false);
-      setIsNewContactMode(false);
+    let result = contacts;
+    
+    // Filter by active filter
+    if (activeFilter === 'favorites') {
+      result = result.filter(contact => contact.isFavorite);
     }
     
-    // Cleanup function when component unmounts
-    return () => {
-      // Reset all modal-related states when component unmounts
-      setIsEditMode(false);
-      setIsNewContactMode(false);
-      setSelectedContact(null);
-      setIsDetailView(false);
-    };
-  }, [isOpen]);
-  
-  // Load contacts when component mounts or dependencies change
-  useEffect(() => {
-    if (isAuthenticated) {
-      loadContacts();
-    }
-  }, [isAuthenticated, searchQuery, filterTag, sortOption]);
-  
-  // Clean up on unmount
-  useEffect(() => {
-    return () => {
-      // Reset all modal-related states when component unmounts
-      setIsEditMode(false);
-      setIsNewContactMode(false);
-      setSelectedContact(null);
-      setIsDetailView(false);
-    };
-  }, [isOpen]);
-  
-  const clearFormData = () => {
-    return {
-      firstName: '',
-      lastName: '',
-      nickname: '',
-      phoneNumbers: [{ type: 'mobile', number: '', isPrimary: true }],
-      emails: [{ type: 'personal', email: '', isPrimary: true }],
-      company: '',
-      jobTitle: '',
-      birthday: '',
-      website: '',
-      address: '',
-      tags: [],
-      notes: '',
-      isFavorite: false
-    };
-  };
-
-  // Function to handle opening a new contact form
-  const handleOpenContactForm = () => {
-    // Reset form data when creating a new contact
-    const emptyForm = clearFormData();
-    setFormData(emptyForm);
-    setIsEditMode(false);
-    setSelectedContact(null); 
-    setIsNewContactMode(true);
-    onClose(true);
-  };
-  
-  // Handle input change
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]: value
-    });
-  };
-  
-  // Handle phone number changes
-  const handlePhoneChange = (index, field, value) => {
-    const updatedPhones = [...formData.phoneNumbers];
-    updatedPhones[index] = { ...updatedPhones[index], [field]: value };
-    setFormData({ ...formData, phoneNumbers: updatedPhones });
-  };
-  
-  // Add phone field
-  const addPhoneField = () => {
-    setFormData({
-      ...formData,
-      phoneNumbers: [...formData.phoneNumbers, { type: 'mobile', number: '', isPrimary: false }]
-    });
-  };
-  
-  // Remove phone field
-  const removePhoneField = (index) => {
-    if (formData.phoneNumbers.length > 1) {
-      const updatedPhones = formData.phoneNumbers.filter((_, i) => i !== index);
-      setFormData({ ...formData, phoneNumbers: updatedPhones });
-    }
-  };
-  
-  // Handle email changes
-  const handleEmailChange = (index, field, value) => {
-    const updatedEmails = [...formData.emails];
-    updatedEmails[index] = { ...updatedEmails[index], [field]: value };
-    setFormData({ ...formData, emails: updatedEmails });
-  };
-  
-  // Add email field
-  const addEmailField = () => {
-    setFormData({
-      ...formData,
-      emails: [...formData.emails, { type: 'personal', email: '', isPrimary: false }]
-    });
-  };
-  
-  // Remove email field
-  const removeEmailField = (index) => {
-    if (formData.emails.length > 1) {
-      const updatedEmails = formData.emails.filter((_, i) => i !== index);
-      setFormData({ ...formData, emails: updatedEmails });
-    }
-  };
-  
-  // Toggle tag selection
-  const toggleTag = (tag) => {
-    const updatedTags = formData.tags.includes(tag)
-      ? formData.tags.filter(t => t !== tag)
-      : [...formData.tags, tag];
-    
-    setFormData({ ...formData, tags: updatedTags });
-  };
-  
-  // Toggle favorite
-  const toggleFavorite = () => {
-    setFormData({ ...formData, isFavorite: !formData.isFavorite });
-  };
-  
-  // Handle sort change
-  const handleSortChange = (option) => {
-    setSortOption(option);
-  };
-  
-  // Sort contacts
-  const sortContacts = (contacts) => {
-    return [...contacts].sort((a, b) => {
-      if (sortOption === 'nameAsc') return `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`);
-      if (sortOption === 'nameDesc') return `${b.firstName} ${b.lastName}`.localeCompare(`${a.firstName} ${a.lastName}`);
-      if (sortOption === 'dateOldest') return a.timestamp - b.timestamp;
-      if (sortOption === 'dateNewest') return b.timestamp - a.timestamp;
-      return 0;
-    });
-  };
-  
-  // Form validation
-  const validateForm = () => {
-    if (!formData.firstName || !formData.lastName) {
-      toast.error("First name and last name are required.");
-      return false;
-    }
-    if (formData.phoneNumbers.some(phone => phone.number && !/^[\d\s()+-]+$/.test(phone.number))) {
-      toast.error("Phone number contains invalid characters.");
-      return false;
-    }
-    if (formData.emails.some(email => email.email && !/^\S+@\S+\.\S+$/.test(email.email))) {
-      toast.error("Invalid email format");
-      return false;
-    }
-
-    // Validate the operation mode
-    if (isEditMode && !selectedContact) {
-      toast.error("Cannot edit contact: No contact selected.");
-      return false;
-    }
-    
-    if (isNewContactMode && isEditMode) { 
-      toast.error("Invalid operation mode: Cannot be in both edit and new contact mode");
-      return false;
-    }
-    
-    return true;
-  };
-  
-  // Handle form submission
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    if (!validateForm()) {
-      return;
-    }
-    
-    setIsSubmitting(true);
-    resetStates();
-
-    try {
-      // Convert form data to match database structure
-      const contactData = {
-        ...formData
-      };
-      
-      if (typeof contactData.phoneNumbers === 'object' && !Array.isArray(contactData.phoneNumbers)) {
-        contactData.phoneNumbers = JSON.stringify(contactData.phoneNumbers);
-      }
-      
-      if (typeof contactData.emails === 'object' && !Array.isArray(contactData.emails)) {
-        contactData.emails = JSON.stringify(contactData.emails);
-      }
-      
-      // If tags is an array, convert to comma-separated string
-      if (Array.isArray(contactData.tags)) {
-        contactData.tags = contactData.tags.join(',');
-      }
-      
-      // If editing, update the contact
-      if (isEditMode && selectedContact) {
-        contactData.Id = selectedContact.Id || selectedContact.id;
-        const updatedContact = await updateContact(contactData);
-        
-        toast.success("Contact updated successfully!");
-        setSuccess(true);
-        setIsEditMode(false);
-      } 
-      else if (isNewContactMode) {
-        // Generate profileImage URL if not provided
-        if (!contactData.profileImage) {
-          contactData.profileImage = `https://ui-avatars.com/api/?name=${encodeURIComponent(formData.firstName)}+${encodeURIComponent(formData.lastName)}&background=4361ee&color=fff`;
-        }
-        
-        const newContact = await createContact(contactData);
-        
-        toast.success("Contact created successfully!");
-        setSuccess(true);
-        setIsNewContactMode(false);
-      }
-      else {
-        // Should never reach here due to validation, but handle as fallback
-        toast.error("Invalid operation mode. Please try again.");
-        setIsEditMode(false);
-        setIsNewContactMode(false);
-      }
-      
-      // Reset form
-      setFormData(clearFormData());
-      setIsEditMode(false);
-      setIsNewContactMode(false);
-      
-      // Reload contacts
-      loadContacts();
-      
-      onClose();
-    } catch (error) {
-      console.error('Error saving contact:', error);
-      setError('Failed to save contact. Please try again.');
-      toast.error(error.message || 'Failed to save contact');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-  
-  // Delete contact
-  const handleDeleteContact = async (id) => {
-    if (!confirm('Are you sure you want to delete this contact?')) return;
-    
-    try {
-      setIsDeleting(true);
-      await deleteContact(id);
-      toast.success("Contact deleted successfully!");
-      setSelectedContact(null);
-      setIsDetailView(false);
-      loadContacts();
-    } catch (error) {
-      console.error('Error deleting contact:', error);
-      toast.error('Failed to delete contact');
-    } finally {
-      setIsDeleting(false);
-    }
-  };
-  
-  // View contact details
-  const viewContactDetails = (contact) => {
-    setSelectedContact(contact);
-    setIsDetailView(true);
-  };
-  
-  // Edit contact
-  const editContact = (contact) => {
-    setFormData({
-      ...contact, 
-      phoneNumbers: contact.phoneNumbers || [{ type: 'mobile', number: '', isPrimary: true }], 
-      emails: contact.emails || [{ type: 'personal', email: '', isPrimary: true }],
-      tags: contact.tags || []
-    });
-    
-    setSelectedContact(contact);
-    setIsDetailView(false);
-    setIsEditMode(true);
-    setIsNewContactMode(false);
-
-    onClose(true); // Open edit form modal
-  };
-
-  // Search and filter contacts
-  const filteredContacts = contacts.filter(contact => {
-    // First filter by tag if a tag is selected
-    if (filterTag && (!contact.tags || !contact.tags.includes(filterTag))) {
-      return false;
-    }
-    
-    // Then filter by search query if one exists
-    if (searchQuery.trim() !== '') {
+    // Apply search query filter
+    if (searchQuery) {
       const query = searchQuery.toLowerCase();
-      const fullName = `${contact.firstName} ${contact.lastName}`.toLowerCase();
-      const emails = contact.emails ? contact.emails.map(e => e.email.toLowerCase()) : [];
-      const phones = contact.phones ? contact.phones.map(p => p.number.toLowerCase()) : [];
-      
-      return fullName.includes(query) || 
-             contact.firstName.toLowerCase().includes(query) || 
-             contact.lastName.toLowerCase().includes(query) ||
-             emails.some(email => email.includes(query)) ||
-             contact.phoneNumbers.some(phone => phone.number.toLowerCase().includes(query));
+      result = result.filter(contact => 
+        contact.firstName?.toLowerCase().includes(query) || 
+        contact.lastName?.toLowerCase().includes(query) ||
+        contact.company?.toLowerCase().includes(query) ||
+        contact.jobTitle?.toLowerCase().includes(query) ||
+        contact.emails?.toLowerCase().includes(query) ||
+        contact.phoneNumbers?.toLowerCase().includes(query)
+      );
     }
-    return true;
-  });
-  
-  // Apply sorting to filtered contacts
-  const sortedAndFilteredContacts = sortContacts(filteredContacts);
-
-  // Effect for handling filtered contacts when search query or filter tag changes
-  useEffect(() => {
-    // This dependency array ensures the effect runs only when these values change
-  }, [searchQuery, filterTag]);
-
-  // Effect for handling sort changes
-  useEffect(() => {
-    // No direct side effects needed, just ensuring re-render when sort option changes
-    // This is handled by the sortContacts function called during render
-    // This empty dependency array ensures the effect runs only when sortOption changes
-  }, [sortOption]);
-  
-  // Close contact details
-  const closeDetails = () => {
-    setIsDetailView(false);
-    setIsEditMode(false);
-    setIsNewContactMode(false);
-    setSelectedContact(null);
-    setFormData(clearFormData());
-  };
-  
-  // Get color for tag
-  const getTagColor = (tag) => {
-    const colors = {
-      'Team': 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
-      'Client': 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
-      'Friend': 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-      'Family': 'bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200',
-      'Tech': 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200',
-      'Design': 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200',
-      'Important': 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-    };
     
-    return colors[tag] || 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
+    // Sort contacts
+    result = sortContacts(result, sortField, sortDirection);
+    
+    setFilteredContacts(result);
+  }, [contacts, searchQuery, activeFilter, sortField, sortDirection]);
+
+  const handleFilterChange = (filter) => {
+    setActiveFilter(filter);
   };
-  
-  // Loading indicator for initial data load
-  if (isLoading && contacts.length === 0) {
-    return <div className="py-10 text-center">Loading contacts...</div>;
-  }
-  
+
+  const sortContacts = (contactsToSort, field, direction) => {
+    return [...contactsToSort].sort((a, b) => {
+      let valueA = a[field] || '';
+      let valueB = b[field] || '';
+      
+      if (field === 'name') {
+        valueA = `${a.firstName || ''} ${a.lastName || ''}`.trim();
+        valueB = `${b.firstName || ''} ${b.lastName || ''}`.trim();
+      }
+      
+      if (direction === 'asc') {
+        return valueA.localeCompare(valueB);
+      } else {
+        return valueB.localeCompare(valueA);
+      }
+    });
+  };
+
+  const handleSortChange = (field) => {
+    if (sortField === field) {
+      // Toggle direction if same field
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      // Set new field with default asc direction
+      setSortField(field);
+      setSortDirection('asc');
+    }
+    setSortDropdownOpen(false);
+  };
+
+  const handleToggleFavorite = async (contactId) => {
+    try {
+      await toggleFavoriteContact(contactId);
+      // Update local state
+      setContacts(contacts.map(contact => 
+        contact.id === contactId 
+          ? { ...contact, isFavorite: !contact.isFavorite } 
+          : contact
+      ));
+      toast.success("Favorite status updated");
+    } catch (error) {
+      console.error("Error toggling favorite:", error);
+      toast.error("Failed to update favorite status");
+    }
+  };
+
+  const handleSubmitContact = async (e) => {
+    e.preventDefault();
+    try {
+      const createdContact = await addNewContact(newContact);
+      setContacts([...contacts, createdContact]);
+      setNewContact({
+        firstName: '',
+        lastName: '',
+        emails: '',
+        phoneNumbers: '',
+        company: '',
+        jobTitle: '',
+        tags: [],
+        isFavorite: false
+      });
+      onClose();
+      toast.success("Contact added successfully!");
+    } catch (error) {
+      console.error("Error adding contact:", error);
+      toast.error("Failed to add contact");
+    }
+  };
+
   return (
     <div className="space-y-8">
-      {/* Filters */}
-      <div className="space-y-3 mb-6"> 
-        <div className="flex items-center justify-between flex-wrap gap-2">
-          <h3 className="text-lg font-medium text-surface-800 dark:text-surface-200 flex items-center">
-            <span>Contacts</span>
-            <span className="filter-counter">{sortedAndFilteredContacts.length}</span>
-          </h3>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        {/* Add filter buttons and filter toggle at the top */}
+        <div className="flex flex-wrap items-center gap-3">
+          <button 
+            className={`filter-toggle ${activeFilter === 'all' ? 'filter-toggle-active' : 'filter-toggle-inactive'}`}
+            onClick={() => handleFilterChange('all')}
+          >
+            All Contacts
+            <span className="filter-counter">{contacts.length}</span>
+          </button>
           
-          {/* Sort Dropdown */}
-          <div className="sort-dropdown relative">
-            <button
-              className="sort-dropdown-button"
-              type="button"
-            >
-              <ArrowUpDown className="w-4 h-4 mr-1" />
-              <span>
-                {sortOption === 'nameAsc' && 'Sort: Name A-Z'}
-                {sortOption === 'nameDesc' && 'Sort: Name Z-A'}
-                {sortOption === 'dateOldest' && 'Sort: Oldest First'}
-                {sortOption === 'dateNewest' && 'Sort: Newest First'}
-              </span>
+          <button 
+            className={`filter-toggle ${activeFilter === 'favorites' ? 'filter-toggle-active' : 'filter-toggle-inactive'}`}
+            onClick={() => handleFilterChange('favorites')}
+          >
+            <Star className="w-4 h-4" />
+            Favorites
+            <span className="filter-counter">{contacts.filter(c => c.isFavorite).length}</span>
+          </button>
+          
+          {/* Sort dropdown */}
+          <div className="sort-dropdown group">
+            <button className="sort-dropdown-button" onClick={() => setSortDropdownOpen(!sortDropdownOpen)}>
+              <ArrowDownUp className="w-4 h-4 mr-2" />
+              Sort
+              <ChevronDown className="w-4 h-4 ml-2" />
             </button>
-            <div className="sort-dropdown-menu">
-              <button 
-                className={`sort-option ${sortOption === 'nameAsc' ? 'active' : ''}`}
-                onClick={() => handleSortChange('nameAsc')}
-              >
-                Name (A-Z)
+            
+            <div className={`sort-dropdown-menu ${sortDropdownOpen ? 'visible opacity-100 translate-y-0' : ''}`}>
+              <button className={`sort-option ${sortField === 'name' ? 'active' : ''}`} onClick={() => handleSortChange('name')}>
+                Name
               </button>
-              <button 
-                className={`sort-option ${sortOption === 'nameDesc' ? 'active' : ''}`}
-                onClick={() => handleSortChange('nameDesc')}
-              >
-                Name (Z-A)
+              <button className={`sort-option ${sortField === 'company' ? 'active' : ''}`} onClick={() => handleSortChange('company')}>
+                Company
               </button>
-              <button 
-                className={`sort-option ${sortOption === 'dateOldest' ? 'active' : ''}`}
-                onClick={() => handleSortChange('dateOldest')}
-              >
-                Date (Oldest first)
-              </button>
-              <button 
-                className={`sort-option ${sortOption === 'dateNewest' ? 'active' : ''}`}
-                onClick={() => handleSortChange('dateNewest')}
-              >
-                Date (Newest first)
+              <div className="sort-divider"></div>
+              <button className="sort-option" onClick={() => setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')}>
+                {sortDirection === 'asc' ? 'Ascending' : 'Descending'}
               </button>
             </div>
           </div>
         </div>
         
-        <div className="flex flex-wrap gap-3">
-          {/* All contacts filter */}
-          <div className="filter-group">
-            <button
-              className={`filter-toggle ${filterTag === '' ? 'filter-toggle-active' : 'filter-toggle-inactive'}`}
-              onClick={() => setFilterTag('')}
-            >
-              <Users className="w-4 h-4" />
-              <span>All Contacts</span>
-            </button>
-          </div>
-          
-          {/* Personal connection filters */}
-          <div className="filter-group">
-            <div className="filter-container">
-              {['Friend', 'Family'].map(tag => (
-                <button key={tag} className={`filter-toggle ${filterTag === tag ? 'filter-toggle-active' : 'filter-toggle-inactive'}`} onClick={() => setFilterTag(tag)}>
-                  {tag}
-                </button>
-              ))}
-            </div>
-          </div>
-          
-          {/* Work-related filters */}
-          <div className="filter-group">
-            <div className="filter-container">
-              {['Team', 'Client', 'Tech', 'Design', 'Important'].map(tag => (
-                <button key={tag} className={`filter-toggle ${filterTag === tag ? 'filter-toggle-active' : 'filter-toggle-inactive'}`} onClick={() => setFilterTag(tag)}>
-                  {tag}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
+        {/* Add Contact Button moved to top right */}
+        <button 
+          onClick={isOpen ? onClose : () => onClose(false)}
+          className="btn-primary flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all"
+        >
+          <span className="w-5 h-5">+</span>
+          <span>Add Contact</span>
+        </button>
       </div>
       
-      {/* Contact Stats */}
-      <div className="mb-4 text-surface-600 dark:text-surface-400 text-sm">
-        {sortedAndFilteredContacts.length === 0 ? (
-          <span>No contacts found</span>
-        ) : filterTag ? ( 
-          <span>Showing {sortedAndFilteredContacts.length} contacts tagged with "{filterTag}"</span> 
-        ) : (
-          <span>Showing all {sortedAndFilteredContacts.length} contacts</span>
-        )}
-      </div>
-
-      {/* Contact List */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {sortedAndFilteredContacts.map(contact => (
-          <motion.div
-            key={contact.id}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-            className="contact-card cursor-pointer transform hover:-translate-y-1 transition-all"
-            onClick={() => viewContactDetails(contact)}
-          >
-            <div className="contact-card-content">
-              {/* Profile Section with improved contrast and framing */}
-              <div className="contact-profile-section">
-                {/* Profile Image */}
-                <div className="avatar-container">
-                  <div className="avatar w-16 h-16 flex-shrink-0">
-                    {contact.profileImage ? ( 
-                      <img 
-                        src={contact.profileImage} 
-                        alt={`${contact.firstName} ${contact.lastName}`}
-                        className="w-full h-full object-cover rounded-full shadow-profile-img"
-                      />
-                    ) : (
-                      <UserCircle className="w-12 h-12" />
+      {loading ? (
+        <div className="flex justify-center items-center min-h-[200px]">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        </div>
+      ) : filteredContacts.length === 0 ? (
+        <div className="bg-surface-100 dark:bg-surface-800 rounded-xl p-8 text-center">
+          <div className="inline-flex items-center justify-center p-4 bg-surface-200 dark:bg-surface-700 rounded-full mb-4">
+            <X className="h-8 w-8 text-surface-500 dark:text-surface-400" />
+          </div>
+          <h3 className="text-xl font-semibold mb-2">No contacts found</h3>
+          <p className="text-surface-600 dark:text-surface-400 mb-6">
+            {searchQuery 
+              ? "No contacts match your search criteria." 
+              : activeFilter === 'favorites' 
+                ? "You don't have any favorite contacts yet." 
+                : "You haven't added any contacts yet."}
+          </p>
+          {!searchQuery && activeFilter !== 'favorites' && (
+            <button 
+              onClick={() => onClose(false)}
+              className="btn-primary inline-flex items-center gap-2"
+            >
+              <span className="w-5 h-5">+</span>
+              <span>Add your first contact</span>
+            </button>
+          )}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {filteredContacts.map(contact => (
+            <div key={contact.id} className="contact-card">
+              <div className="contact-card-content">
+                <div className="contact-profile-section">
+                  <div>
+                    <h3 className="contact-name">{contact.firstName} {contact.lastName}</h3>
+                    {contact.jobTitle && contact.company && (
+                      <p className="contact-position">{contact.jobTitle} at {contact.company}</p>
                     )}
                   </div>
+                  
+                  <button 
+                    onClick={() => handleToggleFavorite(contact.id)}
+                    className={`star-favorite ${contact.isFavorite ? 'text-amber-500' : 'text-surface-400'}`}
+                    aria-label={contact.isFavorite ? "Remove from favorites" : "Add to favorites"}
+                  >
+                    <Star className="h-5 w-5 fill-current" />
+                  </button>
                 </div>
                 
-                {/* Star Favorite Indicator */}
-                {contact.isFavorite && (
-                  <div className="star-favorite">
-                    <Star className="w-6 h-6 fill-amber-400 stroke-amber-500" />
-                  </div>
-                )}
-              </div>
-              
-              {/* Name and Position with increased contrast */}
-              <div className="contact-card-section">
-                <h3 className="contact-name truncate">
-                  {contact.firstName} {contact.lastName}
-                </h3>
-                
-                {contact.jobTitle && contact.company && (
-                  <p className="contact-position">
-                    {contact.jobTitle}, {contact.company}
-                  </p>
-                )}
-              </div>
-              
-              {/* Divider between sections */}
-              <div className="contact-card-divider"></div>
-              
-              {/* Contact Details with consistent icons */}
-              <div className="contact-details-section">
-                {contact.phoneNumbers && contact.phoneNumbers.length > 0 && (
-                  <div className="contact-info-row">
-                    <Phone className="w-4.5 h-4.5 text-primary flex-shrink-0" />
-                    <span className="truncate">{contact.phoneNumbers[0].number}</span>
-                  </div>
-                )}
-                
-                {contact.emails && contact.emails.length > 0 && (
-                  <div className="contact-info-row">
-                    <Mail className="w-4.5 h-4.5 text-primary flex-shrink-0" />
-                    <span className="truncate">{contact.emails[0].email}</span>
-                  </div>
-                )}
-
-                {contact.company && (
-                  <div className="contact-info-row">
-                    <Briefcase className="w-4.5 h-4.5 text-primary flex-shrink-0" />
-                    <span className="truncate">{contact.company}</span>
-                  </div>
-                )}
-              </div>
-              
-              {/* Tags with harmonized color palette */}
-              {contact.tags && contact.tags.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 mt-1">
-                  <div className="contact-card-divider w-full"></div>
-                  {contact.tags.map(tag => (
-                    <span 
-                      key={tag} 
-                      className={`px-2.5 py-1 text-xs rounded-full ${getTagColor(tag)} shadow-tag font-medium transition-transform hover:scale-105`}
-                    >
-                      {tag}
-                    </span>
-                  ))}
+                <div className="contact-details-section">
+                  {contact.emails && (
+                    <div className="contact-info-row">
+                      <Mail className="h-4 w-4 text-primary" />
+                      <span>{contact.emails}</span>
+                    </div>
+                  )}
+                  
+                  {contact.phoneNumbers && (
+                    <div className="contact-info-row">
+                      <Phone className="h-4 w-4 text-primary" />
+                      <span>{contact.phoneNumbers}</span>
+                    </div>
+                  )}
                 </div>
-              )}
+                
+                {contact.tags && contact.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mt-2">
+                    {contact.tags.map((tag, idx) => (
+                      <span key={idx} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-light/10 text-primary-dark">
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
-          </motion.div>
-        ))}
-      </div>
-      
-      {/* No contacts message */}
-      {sortedAndFilteredContacts.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-10 text-center">
-          <div className="w-16 h-16 rounded-full bg-surface-200 dark:bg-surface-700 flex items-center justify-center mb-4">
-            <UserCircle className="w-8 h-8 text-surface-600 dark:text-surface-400" />
-          </div> 
-          <h3 className="text-xl font-semibold mb-2">No contacts found</h3>
-          <p className="text-surface-600 dark:text-surface-400 mb-4">
-            {filterTag ? `No contacts with the tag "${filterTag}"` : "You haven't added any contacts yet"}
-          </p>
-          <button 
-            onClick={() => { setFilterTag(''); handleOpenContactForm(); }}
-            className="btn-primary flex items-center gap-2"
-          >
-            <Plus className="w-5 h-5" />
-            Add New Contact
-          </button>
+          ))}
         </div>
       )}
       
-      {/* Add/Edit Contact Form Modal */}
+      {/* Contact Form Modal */}
       <AnimatePresence>
         {isOpen && (
-          <motion.div
+          <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-40"
-            onClick={() => { 
-              setIsEditMode(false); 
-              setIsNewContactMode(false); 
-              setFormData(clearFormData());
-              onClose(); }}
+            className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
           >
-            <motion.div
-              initial={{ scale: 0.9, y: 20, opacity: 0 }}
-              animate={{ scale: 1, y: 0, opacity: 1 }}
-              exit={{ scale: 0.9, y: 20, opacity: 0 }}
-              transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="bg-white dark:bg-surface-800 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
-              onClick={e => e.stopPropagation()}
+            <motion.div 
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              className="bg-white dark:bg-surface-800 rounded-xl shadow-xl w-full max-w-lg"
             >
-              <div className="sticky top-0 z-10 bg-white dark:bg-surface-800 px-6 py-4 border-b border-surface-200 dark:border-surface-700 flex items-center justify-between">
-                <h2 className="text-xl font-semibold text-surface-800 dark:text-surface-200">
-                  {isEditMode ? "Edit Contact" : "New Contact"}
-                </h2>
-                <button 
-                  onClick={() => { 
-                    setIsEditMode(false); 
-                    setIsNewContactMode(false); 
-                    setFormData(clearFormData());
-                    onClose(); }}
-                  className="p-2 rounded-full hover:bg-surface-200 dark:hover:bg-surface-700 transition-colors"
-                >
-                  <X className="w-5 h-5" />
+              <div className="flex justify-between items-center border-b border-surface-200 dark:border-surface-700 p-4">
+                <h2 className="text-xl font-semibold">Add New Contact</h2>
+                <button onClick={onClose} className="text-surface-500 hover:text-surface-700 dark:text-surface-400 dark:hover:text-surface-200">
+                  <X className="h-6 w-6" />
                 </button>
               </div>
               
-              <form onSubmit={handleSubmit} className="p-6">
-                <div className="space-y-6">
-                  {/* Basic Info */}
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-medium flex items-center gap-2 text-surface-800 dark:text-surface-200">
-                      <User className="w-5 h-5 text-primary" />
-                      Basic Information
-                    </h3>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
-                          First Name <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                          type="text"
-                          name="firstName"
-                          value={formData.firstName}
-                          onChange={handleInputChange}
-                          required
-                          className="input-field"
-                          placeholder="Enter first name"
-                        />
-                      </div>
-                      
-                      <div>
-                        <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
-                          Last Name <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                          type="text"
-                          name="lastName"
-                          value={formData.lastName}
-                          onChange={handleInputChange}
-                          required
-                          className="input-field"
-                          placeholder="Enter last name"
-                        />
-                      </div>
-                      
-                      <div>
-                        <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
-                          Nickname
-                        </label>
-                        <input
-                          type="text"
-                          name="nickname"
-                          value={formData.nickname}
-                          onChange={handleInputChange}
-                          className="input-field"
-                          placeholder="Enter nickname"
-                        />
-                      </div>
-                      
-                      <div>
-                        <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
-                          Birthday
-                        </label>
-                        <div className="relative">
-                          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <Calendar className="h-5 w-5 text-surface-400" />
-                          </div>
-                          <input
-                            type="date"
-                            name="birthday"
-                            value={formData.birthday}
-                            onChange={handleInputChange}
-                            className="input-field pl-10"
-                          />
-                        </div>
-                      </div>
-                    </div>
+              <form onSubmit={handleSubmitContact} className="p-4 space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label htmlFor="firstName" className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">First Name*</label>
+                    <input
+                      type="text"
+                      id="firstName"
+                      value={newContact.firstName}
+                      onChange={(e) => setNewContact({...newContact, firstName: e.target.value})}
+                      className="input-field"
+                      required
+                    />
                   </div>
                   
-                  {/* Contact Info */}
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-medium flex items-center gap-2 text-surface-800 dark:text-surface-200">
-                      <Phone className="w-5 h-5 text-primary" />
-                      Contact Information
-                    </h3>
-                    
-                    {/* Phone Numbers */}
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <label className="block text-sm font-medium text-surface-700 dark:text-surface-300">
-                          Phone Numbers
-                        </label>
-                        <button
-                          type="button"
-                          onClick={addPhoneField}
-                          className="text-primary text-sm hover:text-primary-dark font-medium"
-                        >
-                          + Add Phone
-                        </button>
-                      </div>
-                      
-                      {formData.phoneNumbers.map((phone, index) => (
-                        <div key={index} className="flex gap-3">
-                          <select
-                            value={phone.type}
-                            onChange={(e) => handlePhoneChange(index, 'type', e.target.value)}
-                            className="input-field w-1/3"
-                          >
-                            <option value="mobile">Mobile</option>
-                            <option value="work">Work</option>
-                            <option value="home">Home</option>
-                            <option value="other">Other</option>
-                          </select>
-                          
-                          <div className="relative flex-1">
-                            <input
-                              type="tel"
-                              value={phone.number}
-                              onChange={(e) => handlePhoneChange(index, 'number', e.target.value)}
-                              className="input-field"
-                              placeholder="(555) 123-4567"
-                            />
-                          </div>
-                          
-                          {formData.phoneNumbers.length > 1 && (
-                            <button
-                              type="button"
-                              onClick={() => removePhoneField(index)}
-                              className="p-2 rounded-full text-surface-500 hover:bg-surface-200 dark:hover:bg-surface-700 dark:text-surface-400"
-                            >
-                              <X className="w-5 h-5" />
-                            </button>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                    
-                    {/* Email Addresses */}
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <label className="block text-sm font-medium text-surface-700 dark:text-surface-300">
-                          Email Addresses
-                        </label>
-                        <button
-                          type="button"
-                          onClick={addEmailField}
-                          className="text-primary text-sm hover:text-primary-dark font-medium"
-                        >
-                          + Add Email
-                        </button>
-                      </div>
-                      
-                      {formData.emails.map((email, index) => (
-                        <div key={index} className="flex gap-3">
-                          <select
-                            value={email.type}
-                            onChange={(e) => handleEmailChange(index, 'type', e.target.value)}
-                            className="input-field w-1/3"
-                          >
-                            <option value="personal">Personal</option>
-                            <option value="work">Work</option>
-                            <option value="other">Other</option>
-                          </select>
-                          
-                          <div className="relative flex-1">
-                            <input
-                              type="email"
-                              value={email.email}
-                              onChange={(e) => handleEmailChange(index, 'email', e.target.value)}
-                              className="input-field"
-                              placeholder="example@email.com"
-                            />
-                          </div>
-                          
-                          {formData.emails.length > 1 && (
-                            <button
-                              type="button"
-                              onClick={() => removeEmailField(index)}
-                              className="p-2 rounded-full text-surface-500 hover:bg-surface-200 dark:hover:bg-surface-700 dark:text-surface-400"
-                            >
-                              <X className="w-5 h-5" />
-                            </button>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                    
-                    {/* Address */}
-                    <div>
-                      <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
-                        Address
-                      </label>
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <MapPin className="h-5 w-5 text-surface-400" />
-                        </div>
-                        <input
-                          type="text"
-                          name="address"
-                          value={formData.address}
-                          onChange={handleInputChange}
-                          className="input-field pl-10"
-                          placeholder="Enter address"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Work Info */}
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-medium flex items-center gap-2 text-surface-800 dark:text-surface-200">
-                      <Briefcase className="w-5 h-5 text-primary" />
-                      Work Information
-                    </h3>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
-                          Company
-                        </label>
-                        <input
-                          type="text"
-                          name="company"
-                          value={formData.company}
-                          onChange={handleInputChange}
-                          className="input-field"
-                          placeholder="Enter company name"
-                        />
-                      </div>
-                      
-                      <div>
-                        <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
-                          Job Title
-                        </label>
-                        <input
-                          type="text"
-                          name="jobTitle"
-                          value={formData.jobTitle}
-                          onChange={handleInputChange}
-                          className="input-field"
-                          placeholder="Enter job title"
-                        />
-                      </div>
-                      
-                      <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
-                          Website
-                        </label>
-                        <div className="relative">
-                          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <Globe className="h-5 w-5 text-surface-400" />
-                          </div>
-                          <input
-                            type="url"
-                            name="website"
-                            value={formData.website}
-                            onChange={handleInputChange}
-                            className="input-field pl-10"
-                            placeholder="https://example.com"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Tags and Notes */}
-                  <div className="space-y-4">
-                    <div>
-                      <div className="flex items-center gap-2 mb-2">
-                        <Tag className="w-5 h-5 text-primary" />
-                        <label className="text-sm font-medium text-surface-700 dark:text-surface-300">
-                          Tags
-                        </label>
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        {availableTags.map(tag => (
-                          <button
-                            key={tag}
-                            type="button"
-                            onClick={() => toggleTag(tag)}
-                            className={`px-3 py-1.5 rounded-full text-sm transition-all ${
-                              formData.tags.includes(tag)
-                                ? `${getTagColor(tag)} font-medium`
-                                : 'bg-surface-200 dark:bg-surface-700 text-surface-700 dark:text-surface-300 hover:bg-surface-300 dark:hover:bg-surface-600'
-                            }`}
-                          >
-                            {tag}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
-                        Notes
-                      </label>
-                      <textarea
-                        name="notes"
-                        value={formData.notes}
-                        onChange={handleInputChange}
-                        rows="3"
-                        className="input-field"
-                        placeholder="Add any additional notes about this contact..."
-                      ></textarea>
-                    </div>
-                  </div>
-                  
-                  {/* Favorite toggle */}
-                  <div className="flex items-center">
-                    <button
-                      type="button"
-                      onClick={toggleFavorite}
-                      className="flex items-center justify-center w-6 h-6 rounded-full mr-2"
-                    >
-                      <Star 
-                        className={`w-6 h-6 ${formData.isFavorite ? 'text-amber-400 fill-amber-400' : 'text-surface-400 dark:text-surface-500'}`}
-                      />
-                    </button>
-                    <span className="text-sm text-surface-700 dark:text-surface-300">
-                      {formData.isFavorite ? 'Marked as favorite' : 'Mark as favorite'}
-                    </span>
+                  <div>
+                    <label htmlFor="lastName" className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">Last Name*</label>
+                    <input
+                      type="text"
+                      id="lastName"
+                      value={newContact.lastName}
+                      onChange={(e) => setNewContact({...newContact, lastName: e.target.value})}
+                      className="input-field"
+                      required
+                    />
                   </div>
                 </div>
                 
-                {/* Form Actions */}
-                <div className="mt-8 flex justify-end gap-3">
+                <div>
+                  <label htmlFor="emails" className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">Email Address</label>
+                  <input
+                    type="email"
+                    id="emails"
+                    value={newContact.emails}
+                    onChange={(e) => setNewContact({...newContact, emails: e.target.value})}
+                    className="input-field"
+                  />
+                </div>
+                
+                <div>
+                  <label htmlFor="phoneNumbers" className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">Phone Number</label>
+                  <input
+                    type="tel"
+                    id="phoneNumbers"
+                    value={newContact.phoneNumbers}
+                    onChange={(e) => setNewContact({...newContact, phoneNumbers: e.target.value})}
+                    className="input-field"
+                  />
+                </div>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label htmlFor="company" className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">Company</label>
+                    <input
+                      type="text"
+                      id="company"
+                      value={newContact.company}
+                      onChange={(e) => setNewContact({...newContact, company: e.target.value})}
+                      className="input-field"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label htmlFor="jobTitle" className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">Job Title</label>
+                    <input
+                      type="text"
+                      id="jobTitle"
+                      value={newContact.jobTitle}
+                      onChange={(e) => setNewContact({...newContact, jobTitle: e.target.value})}
+                      className="input-field"
+                    />
+                  </div>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="isFavorite"
+                    checked={newContact.isFavorite}
+                    onChange={(e) => setNewContact({...newContact, isFavorite: e.target.checked})}
+                    className="h-4 w-4 text-primary focus:ring-primary rounded"
+                  />
+                  <label htmlFor="isFavorite" className="text-sm font-medium text-surface-700 dark:text-surface-300">Add to favorites</label>
+                </div>
+                
+                <div className="flex justify-end space-x-3 pt-4">
                   <button
                     type="button"
-                    onClick={() => { 
-                      setIsEditMode(false); 
-                      setIsNewContactMode(false); 
-                      setFormData(clearFormData());
-                      onClose(); }}
-                    className="px-4 py-2 rounded-lg border border-surface-300 dark:border-surface-600 text-surface-700 dark:text-surface-300 hover:bg-surface-100 dark:hover:bg-surface-700 transition-colors"
+                    onClick={onClose}
+                    className="px-4 py-2 text-surface-700 dark:text-surface-300 hover:bg-surface-100 dark:hover:bg-surface-700 rounded-lg transition-colors"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className={`btn-primary flex items-center gap-2 ${isSubmitting ? 'opacity-75 cursor-not-allowed' : ''}`}
-                    disabled={isSubmitting}
+                    className="btn-primary"
                   >
-                    {isSubmitting ? (
-                      <>
-                        <span className="animate-spin inline-block h-5 w-5 border-2 border-white border-t-transparent rounded-full"></span>
-                        <span>{isEditMode ? "Updating..." : "Saving..."}</span>
-                      </>
-                    ) : (<><Save className="w-5 h-5 text-white" />
-                    {isEditMode ? "Update Contact" : "Save Contact"}</>)}
+                    <Check className="h-4 w-4 mr-1" />
+                    Save Contact
                   </button>
                 </div>
               </form>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-      
-      {/* Contact Detail Modal */}
-      <AnimatePresence>
-        {isDetailView && selectedContact && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-40"
-            onClick={closeDetails}
-          >
-            <motion.div
-              initial={{ scale: 0.9, y: 20, opacity: 0 }}
-              animate={{ scale: 1, y: 0, opacity: 1 }}
-              exit={{ scale: 0.9, y: 20, opacity: 0 }}
-              transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="bg-white dark:bg-surface-800 rounded-2xl max-w-xl w-full max-h-[90vh] overflow-y-auto"
-              onClick={e => e.stopPropagation()}
-            >
-              <div className="relative">
-                {/* Header and Actions */}
-                <div className="px-6 py-4 border-b border-surface-200 dark:border-surface-700 flex items-center justify-between">
-                  <h2 className="text-xl font-semibold">Contact Details</h2>
-                  <div className="flex items-center gap-2">
-                    <button 
-                      onClick={() => editContact(selectedContact)}
-                      type="button"
-                      className="flex items-center gap-2 px-4 py-2 rounded-lg text-primary hover:bg-primary-light/20 dark:hover:bg-primary-dark/20 transition-colors"
-                    >
-                      <Edit className="w-5 h-5" />
-                      <span>Edit</span>
-                    </button>
-                    <button 
-                      onClick={closeDetails}
-                      className="p-2 rounded-full hover:bg-surface-200 dark:hover:bg-surface-700 transition-colors"
-                    >
-                      <X className="w-5 h-5" />
-                    </button>
-                  </div>
-                </div>
-                
-                {/* Contact Header */}
-                <div className="p-6 border-b border-surface-200 dark:border-surface-700">
-                  <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
-                    <div className="avatar w-24 h-24 shrink-0">
-                      {selectedContact.profileImage ? (
-                        <img 
-                          src={selectedContact.profileImage} 
-                          alt={`${selectedContact.firstName} ${selectedContact.lastName}`}
-                          className="w-full h-full object-cover rounded-full"
-                        />
-                      ) : (
-                        <UserCircle className="w-16 h-16" />
-                      )}
-                    </div>
-                    <div className="text-center sm:text-left">
-                      <div className="flex flex-col sm:flex-row items-center gap-2">
-                        <h3 className="text-2xl font-bold">
-                          {selectedContact.firstName} {selectedContact.lastName}
-                        </h3>
-                        {selectedContact.isFavorite && (
-                          <Star className="w-6 h-6 text-amber-400 fill-amber-400" />
-                        )}
-                      </div>
-                      
-                      {selectedContact.nickname && (
-                        <p className="text-surface-600 dark:text-surface-400 text-lg">
-                          "{selectedContact.nickname}"
-                        </p>
-                      )}
-                      
-                      {selectedContact.jobTitle && selectedContact.company && (
-                        <p className="text-primary font-medium mt-1">
-                          {selectedContact.jobTitle} at {selectedContact.company}
-                        </p>
-                      )}
-                      
-                      {selectedContact.tags && selectedContact.tags.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mt-3 justify-center sm:justify-start">
-                          {selectedContact.tags.map(tag => (
-                            <span 
-                              key={tag} 
-                              className={`px-2.5 py-1 text-xs rounded-full ${getTagColor(tag)} shadow-tag font-medium`}
-                            >
-                              {tag}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Contact Details */}
-                <div className="p-6">
-                  <div className="space-y-6">
-                    {/* Phone Numbers */}
-                    {selectedContact.phoneNumbers && selectedContact.phoneNumbers.length > 0 && (
-                      <div>
-                        <h4 className="text-sm uppercase text-surface-500 dark:text-surface-400 font-medium mb-2">
-                          Phone Numbers
-                        </h4>
-                        <ul className="space-y-2">
-                          {selectedContact.phoneNumbers.map((phone, index) => (
-                            <li key={index} className="flex items-center gap-3">
-                              <Phone className="w-5 h-5 text-primary" />
-                              <div>
-                                <p className="text-surface-800 dark:text-surface-200 font-medium">
-                                  {phone.number}
-                                </p>
-                                <p className="text-xs text-surface-500 dark:text-surface-400 capitalize">
-                                  {phone.type}
-                                </p>
-                              </div>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                    
-                    {/* Email Addresses */}
-                    {selectedContact.emails && selectedContact.emails.length > 0 && (
-                      <div>
-                        <h4 className="text-sm uppercase text-surface-500 dark:text-surface-400 font-medium mb-2">
-                          Email Addresses
-                        </h4>
-                        <ul className="space-y-2">
-                          {selectedContact.emails.map((email, index) => (
-                            <li key={index} className="flex items-center gap-3">
-                              <Mail className="w-5 h-5 text-primary" />
-                              <div>
-                                <p className="text-surface-800 dark:text-surface-200 font-medium">
-                                  {email.email}
-                                </p>
-                                <p className="text-xs text-surface-500 dark:text-surface-400 capitalize">
-                                  {email.type}
-                                </p>
-                              </div>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                    
-                    {/* Website */}
-                    {selectedContact.website && (
-                      <div>
-                        <h4 className="text-sm uppercase text-surface-500 dark:text-surface-400 font-medium mb-2">
-                          Website
-                        </h4>
-                        <div className="flex items-center gap-3">
-                          <Globe className="w-5 h-5 text-primary" />
-                          <a 
-                            href={selectedContact.website} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="text-primary hover:underline"
-                          >
-                            {selectedContact.website}
-                          </a>
-                        </div>
-                      </div>
-                    )}
-                    
-                    {/* Birthday */}
-                    {selectedContact.birthday && (
-                      <div>
-                        <h4 className="text-sm uppercase text-surface-500 dark:text-surface-400 font-medium mb-2">
-                          Birthday
-                        </h4>
-                        <div className="flex items-center gap-3">
-                          <Calendar className="w-5 h-5 text-primary" />
-                          <p>{new Date(selectedContact.birthday).toLocaleDateString()}</p>
-                        </div>
-                      </div>
-                    )}
-                    
-                    {/* Address */}
-                    {selectedContact.address && (
-                      <div>
-                        <h4 className="text-sm uppercase text-surface-500 dark:text-surface-400 font-medium mb-2">
-                          Address
-                        </h4>
-                        <div className="flex items-start gap-3">
-                          <MapPin className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-                          <p>{selectedContact.address}</p>
-                        </div>
-                      </div>
-                    )}
-                    
-                    {/* Notes */}
-                    {selectedContact.notes && (
-                      <div>
-                        <h4 className="text-sm uppercase text-surface-500 dark:text-surface-400 font-medium mb-2">
-                          Notes
-                        </h4>
-                        <div className="bg-surface-100 dark:bg-surface-700/50 rounded-lg p-3">
-                          <p className="text-surface-700 dark:text-surface-300 whitespace-pre-line">
-                            {selectedContact.notes}
-                          </p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                
-                {/* Actions */}
-                <div className="p-6 border-t border-surface-200 dark:border-surface-700 flex justify-between">
-                  <button
-                    onClick={() => handleDeleteContact(selectedContact.id || selectedContact.Id)}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors ${isDeleting ? 'opacity-75 cursor-not-allowed' : ''}`}
-                    disabled={isDeleting}
-                  >
-                    {isDeleting ? (
-                      <>
-                        <span className="animate-spin inline-block h-5 w-5 border-2 border-red-600 border-t-transparent rounded-full"></span>
-                        <span>Deleting...</span>
-                      </>
-                    ) : (<><Trash className="w-5 h-5" />
-                    <span>Delete Contact</span></>)}
-                  </button>
-                   
-                  <button
-                    onClick={() => editContact(selectedContact)}
-                    className="flex items-center gap-2 px-4 py-2 rounded-lg text-primary hover:bg-primary-light/20 dark:hover:bg-primary-dark/20 transition-colors"
-                  >
-                    <Edit className="w-5 h-5" />
-                    <span>Edit Contact</span>
-                  </button>
-                </div>
-              </div>
             </motion.div>
           </motion.div>
         )}

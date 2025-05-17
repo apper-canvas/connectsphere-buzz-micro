@@ -279,7 +279,7 @@ const MainFeature = ({ isOpen, onClose, searchQuery = '' }) => {
     if (!validateForm()) {
       return;
     }
-    
+
     // If editing, update the contact
     if (isEditMode && selectedContact) {
       const updatedContacts = contacts.map(contact => 
@@ -287,8 +287,9 @@ const MainFeature = ({ isOpen, onClose, searchQuery = '' }) => {
       );
       setContacts(updatedContacts);
       toast.success("Contact updated successfully!");
-      setIsEditMode(false);
-    } else {
+      setIsEditMode(false); 
+    } 
+    else if (isNewContactMode) {
       // Create new contact
       const newContact = {
         ...formData,
@@ -299,6 +300,12 @@ const MainFeature = ({ isOpen, onClose, searchQuery = '' }) => {
       
       setContacts([...contacts, newContact]);
       toast.success("Contact created successfully!");
+      setIsNewContactMode(false);
+    }
+    else {
+      // Should never reach here due to validation, but handle as fallback
+      toast.error("Invalid operation mode. Please try again.");
+      setIsEditMode(false);
       setIsNewContactMode(false);
     }
     
@@ -647,8 +654,8 @@ const MainFeature = ({ isOpen, onClose, searchQuery = '' }) => {
               onClick={e => e.stopPropagation()}
             >
               <div className="sticky top-0 z-10 bg-white dark:bg-surface-800 px-6 py-4 border-b border-surface-200 dark:border-surface-700 flex items-center justify-between">
-                <h2 className="text-xl font-semibold">
-                  {isEditMode ? "Edit Contact" : "Add New Contact"}
+                <h2 className="text-xl font-semibold text-surface-800 dark:text-surface-200">
+                  {isEditMode ? "Edit Contact" : "New Contact"}
                 </h2>
                 <button 
                   onClick={() => { setIsEditMode(false); setIsNewContactMode(false); onClose(); }}
@@ -990,7 +997,7 @@ const MainFeature = ({ isOpen, onClose, searchQuery = '' }) => {
                     type="submit"
                     className="btn-primary flex items-center gap-2"
                   >
-                    <Save className="w-5 h-5" />
+                    <Save className="w-5 h-5 text-white" />
                     {isEditMode ? "Update Contact" : "Save Contact"}
                   </button>
                 </div>

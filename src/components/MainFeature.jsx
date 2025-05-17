@@ -296,8 +296,8 @@ const MainFeature = ({ isOpen, onClose, searchQuery = '' }) => {
   // Edit contact
   const editContact = (contact) => {
     setFormData({
-      ...contact,
-      phoneNumbers: contact.phoneNumbers || [{ type: 'mobile', number: '', isPrimary: true }],
+      ...contact, 
+      phoneNumbers: contact.phoneNumbers || [{ type: 'mobile', number: '', isPrimary: true }], 
       emails: contact.emails || [{ type: 'personal', email: '', isPrimary: true }],
       tags: contact.tags || []
     });
@@ -306,8 +306,8 @@ const MainFeature = ({ isOpen, onClose, searchQuery = '' }) => {
     setIsDetailView(false);
     setIsEditMode(true);
     setIsNewContactMode(false);
-    
-    // Open the contact form with the contact data
+
+    // Open the contact form modal with edit configuration
     onClose(true); // Open edit form modal
   };
   

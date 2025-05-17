@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion'; 
 import { toast } from 'react-toastify'; 
 import { getIcon } from '../utils/iconUtils';
 
@@ -96,6 +96,37 @@ const MainFeature = ({ isOpen, onClose, searchQuery = '' }) => {
   const availableTags = ['Team', 'Client', 'Friend', 'Family', 'Tech', 'Design', 'Important'];
 
   // Function to clear form data
+  useEffect(() => {
+    // Effect for initializing form data when in edit mode
+    if (isEditMode && selectedContact) {
+      setFormData({
+        ...selectedContact, 
+        phoneNumbers: selectedContact.phoneNumbers || [{ type: 'mobile', number: '', isPrimary: true }], 
+        emails: selectedContact.emails || [{ type: 'personal', email: '', isPrimary: true }],
+        tags: selectedContact.tags || []
+      });
+    }
+    
+    // Cleanup function to reset state when component unmounts
+    return () => {
+      // No need to reset states here as it would cause issues during normal use
+    };
+  }, [isEditMode, selectedContact]);
+  
+  // Effect for modal state handling and cleanup
+  useEffect(() => {
+    // If modal is closed, reset certain states
+    if (!isOpen) {
+      // Don't reset here as it would interfere with normal operation
+    }
+    
+    // Cleanup function when component unmounts
+    return () => {
+      setIsEditMode(false);
+      setIsNewContactMode(false);
+    };
+  }, [isOpen]);
+  
   const clearFormData = () => {
     return {
       firstName: '',
@@ -311,6 +342,14 @@ const MainFeature = ({ isOpen, onClose, searchQuery = '' }) => {
     // Open the contact form modal with edit configuration
     onClose(true); // Open edit form modal
   };
+
+  // Cleanup function for all states when component unmounts
+  useEffect(() => {
+    return () => {
+      setSelectedContact(null);
+      setFormData(clearFormData());
+    };
+  }, []);
   
   // Search and filter contacts
   const filteredContacts = contacts.filter(contact => {
@@ -337,6 +376,18 @@ const MainFeature = ({ isOpen, onClose, searchQuery = '' }) => {
   
   // Apply sorting to filtered contacts
   const sortedAndFilteredContacts = sortContacts(filteredContacts);
+
+  // Effect for handling filtered contacts when search query or filter tag changes
+  useEffect(() => {
+    // This dependency array ensures the effect runs only when these values change
+  }, [searchQuery, filterTag]);
+
+  // Effect for handling sort changes
+  useEffect(() => {
+    // No direct side effects needed, just ensuring re-render when sort option changes
+    // This is handled by the sortContacts function called during render
+    // This empty dependency array ensures the effect runs only when sortOption changes
+  }, [sortOption]);
   
   // Close contact details
   const closeDetails = () => {

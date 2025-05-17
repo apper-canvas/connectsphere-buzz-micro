@@ -117,13 +117,18 @@ const MainFeature = ({ isOpen, onClose, searchQuery = '' }) => {
   useEffect(() => {
     // If modal is closed, reset certain states
     if (!isOpen) {
-      // Don't reset here as it would interfere with normal operation
+      setFormData(clearFormData());
+      setIsEditMode(false);
+      setIsNewContactMode(false);
     }
     
     // Cleanup function when component unmounts
     return () => {
+      // Reset all modal-related states when component unmounts
       setIsEditMode(false);
       setIsNewContactMode(false);
+      setSelectedContact(null);
+      setIsDetailView(false);
     };
   }, [isOpen]);
   
@@ -346,7 +351,6 @@ const MainFeature = ({ isOpen, onClose, searchQuery = '' }) => {
     setIsEditMode(true);
     setIsNewContactMode(false);
 
-    // Open the contact form modal with edit configuration
     onClose(true); // Open edit form modal
   };
 
@@ -354,6 +358,8 @@ const MainFeature = ({ isOpen, onClose, searchQuery = '' }) => {
   useEffect(() => {
     return () => {
       setSelectedContact(null);
+      setIsDetailView(false);
+      setIsEditMode(false);
       setFormData(clearFormData());
     };
   }, []);
@@ -402,6 +408,7 @@ const MainFeature = ({ isOpen, onClose, searchQuery = '' }) => {
     setIsEditMode(false);
     setIsNewContactMode(false);
     setSelectedContact(null);
+    setFormData(clearFormData());
   };
   
   // Get color for tag
@@ -643,7 +650,11 @@ const MainFeature = ({ isOpen, onClose, searchQuery = '' }) => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-40"
-            onClick={() => { setIsEditMode(false); setIsNewContactMode(false); onClose(); }}
+            onClick={() => { 
+              setIsEditMode(false); 
+              setIsNewContactMode(false); 
+              setFormData(clearFormData());
+              onClose(); }}
           >
             <motion.div
               initial={{ scale: 0.9, y: 20, opacity: 0 }}
@@ -658,7 +669,11 @@ const MainFeature = ({ isOpen, onClose, searchQuery = '' }) => {
                   {isEditMode ? "Edit Contact" : "New Contact"}
                 </h2>
                 <button 
-                  onClick={() => { setIsEditMode(false); setIsNewContactMode(false); onClose(); }}
+                  onClick={() => { 
+                    setIsEditMode(false); 
+                    setIsNewContactMode(false); 
+                    setFormData(clearFormData());
+                    onClose(); }}
                   className="p-2 rounded-full hover:bg-surface-200 dark:hover:bg-surface-700 transition-colors"
                 >
                   <X className="w-5 h-5" />
@@ -988,7 +1003,11 @@ const MainFeature = ({ isOpen, onClose, searchQuery = '' }) => {
                 <div className="mt-8 flex justify-end gap-3">
                   <button
                     type="button"
-                    onClick={() => { setIsEditMode(false); setIsNewContactMode(false); onClose(); }}
+                    onClick={() => { 
+                      setIsEditMode(false); 
+                      setIsNewContactMode(false); 
+                      setFormData(clearFormData());
+                      onClose(); }}
                     className="px-4 py-2 rounded-lg border border-surface-300 dark:border-surface-600 text-surface-700 dark:text-surface-300 hover:bg-surface-100 dark:hover:bg-surface-700 transition-colors"
                   >
                     Cancel

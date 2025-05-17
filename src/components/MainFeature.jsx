@@ -328,73 +328,78 @@ const MainFeature = ({ isOpen, onClose, searchQuery = '' }) => {
         {filteredContacts.map(contact => (
           <motion.div
             key={contact.id}
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
-            className="card hover:shadow-lg cursor-pointer transform hover:-translate-y-1 transition-all"
+            className="contact-card cursor-pointer transform hover:-translate-y-1 transition-all"
             onClick={() => viewContactDetails(contact)}
           >
-            <div className="p-4">
-              <div className="flex items-start gap-4">
+            <div className="contact-card-content">
+              <div className="flex items-center justify-between">
                 {/* Profile Image */}
-                <div className="avatar w-14 h-14">
+                <div className="avatar w-16 h-16 flex-shrink-0">
                   {contact.profileImage ? (
                     <img 
                       src={contact.profileImage} 
                       alt={`${contact.firstName} ${contact.lastName}`}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover rounded-full"
                     />
                   ) : (
-                    <UserCircle className="w-10 h-10" />
+                    <UserCircle className="w-12 h-12" />
                   )}
                 </div>
                 
-                {/* Content */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-2">
-                    <h3 className="text-lg font-semibold truncate">
-                      {contact.firstName} {contact.lastName}
-                      {contact.isFavorite && (
-                        <Star className="inline-block ml-1 w-4 h-4 text-amber-400 fill-amber-400" />
-                      )}
-                    </h3>
+                {/* Favorite Indicator */}
+                {contact.isFavorite && (
+                  <div className="favorite-indicator">
+                    <Star className="w-5 h-5 fill-amber-400" />
                   </div>
-                  
-                  {contact.jobTitle && contact.company && (
-                    <p className="text-surface-600 dark:text-surface-400 text-sm mb-1">
-                      {contact.jobTitle}, {contact.company}
-                    </p>
-                  )}
-                  
-                  {contact.phoneNumbers && contact.phoneNumbers.length > 0 && (
-                    <div className="flex items-center text-surface-700 dark:text-surface-300 text-sm mb-1">
-                      <Phone className="w-3.5 h-3.5 mr-1.5" />
-                      <span className="truncate">{contact.phoneNumbers[0].number}</span>
-                    </div>
-                  )}
-                  
-                  {contact.emails && contact.emails.length > 0 && (
-                    <div className="flex items-center text-surface-700 dark:text-surface-300 text-sm mb-2">
-                      <Mail className="w-3.5 h-3.5 mr-1.5" />
-                      <span className="truncate">{contact.emails[0].email}</span>
-                    </div>
-                  )}
-                  
-                  {/* Tags */}
-                  {contact.tags && contact.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mt-2">
-                      {contact.tags.map(tag => (
-                        <span 
-                          key={tag} 
-                          className={`px-2 py-0.5 text-xs rounded-full ${getTagColor(tag)}`}
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                )}
               </div>
+              
+              {/* Content */}
+              <div className="mt-2">
+                <h3 className="text-lg font-semibold truncate mb-1">
+                  {contact.firstName} {contact.lastName}
+                </h3>
+                
+                {contact.jobTitle && contact.company && (
+                  <p className="text-surface-600 dark:text-surface-400 text-sm mb-3">
+                    {contact.jobTitle}, {contact.company}
+                  </p>
+                )}
+              </div>
+              
+              {/* Contact Details */}
+              <div className="space-y-1">
+                {contact.phoneNumbers && contact.phoneNumbers.length > 0 && (
+                  <div className="contact-info-row">
+                    <Phone className="w-4 h-4 text-primary flex-shrink-0" />
+                    <span className="truncate">{contact.phoneNumbers[0].number}</span>
+                  </div>
+                )}
+                
+                {contact.emails && contact.emails.length > 0 && (
+                  <div className="contact-info-row">
+                    <Mail className="w-4 h-4 text-primary flex-shrink-0" />
+                    <span className="truncate">{contact.emails[0].email}</span>
+                  </div>
+                )}
+              </div>
+              
+              {/* Tags */}
+              {contact.tags && contact.tags.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mt-2 pt-2 border-t border-surface-100 dark:border-surface-700">
+                  {contact.tags.map(tag => (
+                    <span 
+                      key={tag} 
+                      className={`px-2 py-0.5 text-xs rounded-full ${getTagColor(tag)}`}
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
           </motion.div>
         ))}

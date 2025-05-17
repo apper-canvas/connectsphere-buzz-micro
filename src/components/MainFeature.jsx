@@ -14,6 +14,7 @@ const MainFeature = ({ isOpen, onClose }) => {
   const MapPin = getIcon('MapPin');
   const Calendar = getIcon('Calendar');
   const Globe = getIcon('Globe');
+  const Plus = getIcon('Plus');
   const Tag = getIcon('Tag');
   const Save = getIcon('Save');
   const Trash = getIcon('Trash');
@@ -392,7 +393,6 @@ const MainFeature = ({ isOpen, onClose }) => {
             onClick={() => { setFilterTag(''); handleOpenContactForm(); }}
             className="btn-primary flex items-center gap-2"
           >
-            <Plus className="w-5 h-5" />
             <Plus className="w-5 h-5" />
             Add New Contact
           </button>

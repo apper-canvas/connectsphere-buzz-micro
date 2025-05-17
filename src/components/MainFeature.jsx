@@ -87,7 +87,8 @@ const MainFeature = ({ isOpen, onClose, searchQuery = '' }) => {
   const [filterTag, setFilterTag] = useState('');
   const [selectedContact, setSelectedContact] = useState(null);
   const [isDetailView, setIsDetailView] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [isNewContactMode, setIsNewContactMode] = useState(false);
   
   // Sort state
   const [sortOption, setSortOption] = useState('nameAsc'); // Default sort by name A-Z
@@ -102,7 +103,8 @@ const MainFeature = ({ isOpen, onClose, searchQuery = '' }) => {
       emails: [{ type: 'personal', email: '', isPrimary: true }], company: '', jobTitle: '', birthday: '',
       website: '', address: '', tags: [], notes: '', isFavorite: false
     });
-    setIsEditing(false);
+    setIsEditMode(false);
+    setIsNewContactMode(true);
     onClose(true);
   };
   
@@ -220,13 +222,13 @@ const MainFeature = ({ isOpen, onClose, searchQuery = '' }) => {
     }
     
     // If editing, update the contact
-    if (isEditing && selectedContact) {
+    if (isEditMode && selectedContact) {
       const updatedContacts = contacts.map(contact => 
         contact.id === selectedContact.id ? { ...formData, id: selectedContact.id } : contact
       );
       setContacts(updatedContacts);
       toast.success("Contact updated successfully!");
-      setIsEditing(false);
+      setIsEditMode(false);
     } else {
       // Create new contact
       const newContact = {
@@ -238,6 +240,7 @@ const MainFeature = ({ isOpen, onClose, searchQuery = '' }) => {
       
       setContacts([...contacts, newContact]);
       toast.success("Contact created successfully!");
+      setIsNewContactMode(false);
     }
     
     // Reset form
@@ -256,6 +259,8 @@ const MainFeature = ({ isOpen, onClose, searchQuery = '' }) => {
       notes: '',
       isFavorite: false
     });
+    setIsEditMode(false);
+    setIsNewContactMode(false);
     
     onClose();
   };
@@ -285,8 +290,9 @@ const MainFeature = ({ isOpen, onClose, searchQuery = '' }) => {
     });
     
     setSelectedContact(contact);
-    setIsEditing(true);
     setIsDetailView(false);
+    setIsEditMode(true);
+    setIsNewContactMode(false);
     
     // Open the contact form with the contact data
     onClose(true); // Open edit form modal
@@ -321,6 +327,8 @@ const MainFeature = ({ isOpen, onClose, searchQuery = '' }) => {
   // Close contact details
   const closeDetails = () => {
     setIsDetailView(false);
+    setIsEditMode(false);
+    setIsNewContactMode(false);
     setSelectedContact(null);
   };
   
@@ -563,7 +571,7 @@ const MainFeature = ({ isOpen, onClose, searchQuery = '' }) => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-40"
-            onClick={onClose}
+            onClick={() => { setIsEditMode(false); setIsNewContactMode(false); onClose(); }}
           >
             <motion.div
               initial={{ scale: 0.9, y: 20, opacity: 0 }}
@@ -575,10 +583,10 @@ const MainFeature = ({ isOpen, onClose, searchQuery = '' }) => {
             >
               <div className="sticky top-0 z-10 bg-white dark:bg-surface-800 px-6 py-4 border-b border-surface-200 dark:border-surface-700 flex items-center justify-between">
                 <h2 className="text-xl font-semibold">
-                  {isEditing ? "Edit Contact" : "Add New Contact"}
+                  {isEditMode ? "Edit Contact" : "Add New Contact"}
                 </h2>
                 <button 
-                  onClick={onClose}
+                  onClick={() => { setIsEditMode(false); setIsNewContactMode(false); onClose(); }}
                   className="p-2 rounded-full hover:bg-surface-200 dark:hover:bg-surface-700 transition-colors"
                 >
                   <X className="w-5 h-5" />
@@ -908,7 +916,7 @@ const MainFeature = ({ isOpen, onClose, searchQuery = '' }) => {
                 <div className="mt-8 flex justify-end gap-3">
                   <button
                     type="button"
-                    onClick={onClose}
+                    onClick={() => { setIsEditMode(false); setIsNewContactMode(false); onClose(); }}
                     className="px-4 py-2 rounded-lg border border-surface-300 dark:border-surface-600 text-surface-700 dark:text-surface-300 hover:bg-surface-100 dark:hover:bg-surface-700 transition-colors"
                   >
                     Cancel
@@ -918,7 +926,7 @@ const MainFeature = ({ isOpen, onClose, searchQuery = '' }) => {
                     className="btn-primary flex items-center gap-2"
                   >
                     <Save className="w-5 h-5" />
-                    {isEditing ? "Update Contact" : "Save Contact"}
+                    {isEditMode ? "Update Contact" : "Save Contact"}
                   </button>
                 </div>
               </form>

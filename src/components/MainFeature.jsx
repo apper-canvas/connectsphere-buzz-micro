@@ -24,10 +24,6 @@ const MainFeature = ({ isOpen, onClose }) => {
   // Contact form state
   const [formData, setFormData] = useState({
     firstName: '',
-
-  // Function to handle opening the contact form
-  const handleOpenContactForm = () => onClose();
-
     lastName: '',
     nickname: '',
     phoneNumbers: [{ type: 'mobile', number: '', isPrimary: true }],
@@ -90,6 +86,9 @@ const MainFeature = ({ isOpen, onClose }) => {
   
   // Available tags
   const availableTags = ['Team', 'Client', 'Friend', 'Family', 'Tech', 'Design', 'Important'];
+
+  // Function to handle opening the contact form
+  const handleOpenContactForm = () => onClose();
   
   // Handle input change
   const handleInputChange = (e) => {

@@ -218,7 +218,7 @@ const MainFeature = ({ isOpen, onClose, searchQuery }) => {
           </p>
           {!searchQuery && activeFilter !== 'favorites' && (
             <button 
-              onClick={() => onClose(true)}
+              onClick={() => onClose(false)}
               className="btn-primary inline-flex items-center gap-2"
             >
               <span className="w-5 h-5">+</span>

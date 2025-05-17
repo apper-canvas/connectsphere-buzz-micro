@@ -95,15 +95,31 @@ const MainFeature = ({ isOpen, onClose, searchQuery = '' }) => {
   // Available tags
   const availableTags = ['Team', 'Client', 'Friend', 'Family', 'Tech', 'Design', 'Important'];
 
+  // Function to clear form data
+  const clearFormData = () => {
+    return {
+      firstName: '',
+      lastName: '',
+      nickname: '',
+      phoneNumbers: [{ type: 'mobile', number: '', isPrimary: true }],
+      emails: [{ type: 'personal', email: '', isPrimary: true }],
+      company: '',
+      jobTitle: '',
+      birthday: '',
+      website: '',
+      address: '',
+      tags: [],
+      notes: '',
+      isFavorite: false
+    };
+  };
+
   // Function to handle opening a new contact form
   const handleOpenContactForm = () => {
     // Reset form data when creating a new contact
-    setFormData({
-      firstName: '', lastName: '', nickname: '', phoneNumbers: [{ type: 'mobile', number: '', isPrimary: true }],
-      emails: [{ type: 'personal', email: '', isPrimary: true }], company: '', jobTitle: '', birthday: '',
-      website: '', address: '', tags: [], notes: '', isFavorite: false
-    });
+    setFormData(clearFormData());
     setIsEditMode(false);
+    setSelectedContact(null);
     setIsNewContactMode(true);
     onClose(true);
   };
@@ -209,6 +225,17 @@ const MainFeature = ({ isOpen, onClose, searchQuery = '' }) => {
       toast.error("Invalid email format");
       return false;
     }
+
+    // Validate the operation mode
+    if (isEditMode && !selectedContact) {
+      toast.error("Cannot edit contact: No contact selected");
+      return false;
+    }
+    
+    if (isNewContactMode && isEditMode) {
+      toast.error("Invalid operation mode: Cannot be in both edit and new contact mode");
+      return false;
+    }
     
     return true;
   };
@@ -244,21 +271,7 @@ const MainFeature = ({ isOpen, onClose, searchQuery = '' }) => {
     }
     
     // Reset form
-    setFormData({
-      firstName: '',
-      lastName: '',
-      nickname: '',
-      phoneNumbers: [{ type: 'mobile', number: '', isPrimary: true }],
-      emails: [{ type: 'personal', email: '', isPrimary: true }],
-      company: '',
-      jobTitle: '',
-      birthday: '',
-      website: '',
-      address: '',
-      tags: [],
-      notes: '',
-      isFavorite: false
-    });
+    setFormData(clearFormData());
     setIsEditMode(false);
     setIsNewContactMode(false);
     

@@ -1130,7 +1130,7 @@ const MainFeature = ({ isOpen, onClose, searchQuery = '' }) => {
                   
                   <button
                     onClick={() => editContact(selectedContact)}
-                    className="btn-primary flex items-center gap-2"
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg text-primary hover:bg-primary-light/20 dark:hover:bg-primary-dark/20 transition-colors"
                   >
                     <Edit className="w-5 h-5" />
                     <span>Edit Contact</span>

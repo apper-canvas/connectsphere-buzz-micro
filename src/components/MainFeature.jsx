@@ -94,8 +94,17 @@ const MainFeature = ({ isOpen, onClose, searchQuery = '' }) => {
   // Available tags
   const availableTags = ['Team', 'Client', 'Friend', 'Family', 'Tech', 'Design', 'Important'];
 
-  // Function to handle opening the contact form from the empty state
-  const handleOpenContactForm = () => onClose(true);
+  // Function to handle opening a new contact form
+  const handleOpenContactForm = () => {
+    // Reset form data when creating a new contact
+    setFormData({
+      firstName: '', lastName: '', nickname: '', phoneNumbers: [{ type: 'mobile', number: '', isPrimary: true }],
+      emails: [{ type: 'personal', email: '', isPrimary: true }], company: '', jobTitle: '', birthday: '',
+      website: '', address: '', tags: [], notes: '', isFavorite: false
+    });
+    setIsEditing(false);
+    onClose(true);
+  };
   
   // Handle input change
   const handleInputChange = (e) => {
@@ -274,9 +283,12 @@ const MainFeature = ({ isOpen, onClose, searchQuery = '' }) => {
       emails: contact.emails || [{ type: 'personal', email: '', isPrimary: true }],
       tags: contact.tags || []
     });
+    
     setSelectedContact(contact);
     setIsEditing(true);
-    setIsDetailView(false); 
+    setIsDetailView(false);
+    
+    // Open the contact form with the contact data
     onClose(true); // Open edit form modal
   };
   
@@ -534,7 +546,7 @@ const MainFeature = ({ isOpen, onClose, searchQuery = '' }) => {
             {filterTag ? `No contacts with the tag "${filterTag}"` : "You haven't added any contacts yet"}
           </p>
           <button 
-            onClick={() => { setFilterTag(''); onClose(true); }}
+            onClick={() => { setFilterTag(''); handleOpenContactForm(); }}
             className="btn-primary flex items-center gap-2"
           >
             <Plus className="w-5 h-5" />
@@ -940,9 +952,11 @@ const MainFeature = ({ isOpen, onClose, searchQuery = '' }) => {
                   <div className="flex items-center gap-2">
                     <button 
                       onClick={() => editContact(selectedContact)}
-                      className="flex items-center gap-2 p-2 rounded-lg hover:bg-primary-light/20 dark:hover:bg-primary-dark/20 transition-colors text-primary"
+                      type="button"
+                      className="flex items-center gap-2 px-4 py-2 rounded-lg text-primary hover:bg-primary-light/20 dark:hover:bg-primary-dark/20 transition-colors"
                     >
                       <Edit className="w-5 h-5" />
+                      <span>Edit</span>
                     </button>
                     <button 
                       onClick={closeDetails}

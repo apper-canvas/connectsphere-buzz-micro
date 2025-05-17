@@ -40,18 +40,6 @@ const Home = () => {
       <header className="bg-gradient-to-r from-primary to-secondary shadow-md">
         <div className="container mx-auto px-4 py-3 md:py-4">
           <div className="relative">
-            {/* Logout Button - Positioned absolutely in the top right */}
-            <div className="absolute right-0 top-0">
-              {isAuthenticated && (
-                <button
-                  onClick={logout}
-                  className="text-white hover:text-gray-200 flex items-center gap-2"
-                >
-                  <LogOutIcon className="h-5 w-5" />
-                  <span className="hidden sm:inline">Logout</span>
-                </button>
-              )}
-            </div>
             
             <div className="flex flex-col md:flex-row items-center justify-between gap-3">
               <div className="flex items-center flex-shrink-0">
@@ -83,6 +71,18 @@ const Home = () => {
                   className="pl-10 pr-4 py-2.5 w-full rounded-xl border border-white/30 focus:ring-2 focus:ring-white/50 focus:border-transparent bg-white/90 backdrop-blur-sm text-surface-800 placeholder-surface-500 shadow-search transition-all duration-200"
                 />
               </div>
+              
+              {/* Visible Logout Button */}
+              {isAuthenticated && (
+                <button
+                  onClick={logout}
+                  className="btn bg-white/15 hover:bg-white/25 text-white border border-white/30 shadow-sm flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 whitespace-nowrap"
+                  aria-label="Logout"
+                >
+                  <LogOutIcon className="h-5 w-5" />
+                  <span>Logout</span>
+                </button>
+              )}
             </div>
           </div>
         </div>

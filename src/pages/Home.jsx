@@ -76,7 +76,8 @@ const Home = () => {
         {/* Main Feature */}
         <MainFeature 
           isOpen={isContactFormOpen} 
-          onClose={handleCloseContactForm} 
+          onClose={handleCloseContactForm}
+          searchQuery={searchQuery}
         />
       </main>
     </div>

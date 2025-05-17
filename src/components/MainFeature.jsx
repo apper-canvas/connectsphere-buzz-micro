@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-toastify';
 import { getIcon } from '../utils/iconUtils';
 
-const MainFeature = ({ isOpen, onClose }) => {
+const MainFeature = ({ isOpen, onClose, searchQuery = '' }) => {
   // Icons using getIcon utility
   const User = getIcon('User');
   const Phone = getIcon('Phone');
@@ -256,10 +256,28 @@ const MainFeature = ({ isOpen, onClose }) => {
     onClose(); // Close detail view
   };
   
-  // Filter contacts by tag
-  const filteredContacts = filterTag 
-    ? contacts.filter(contact => contact.tags && contact.tags.includes(filterTag))
-    : contacts;
+  // Search and filter contacts
+  const filteredContacts = contacts.filter(contact => {
+    // First filter by tag if a tag is selected
+    if (filterTag && (!contact.tags || !contact.tags.includes(filterTag))) {
+      return false;
+    }
+    
+    // Then filter by search query if one exists
+    if (searchQuery.trim() !== '') {
+      const query = searchQuery.toLowerCase();
+      const fullName = `${contact.firstName} ${contact.lastName}`.toLowerCase();
+      const emails = contact.emails ? contact.emails.map(e => e.email.toLowerCase()) : [];
+      const phones = contact.phones ? contact.phones.map(p => p.number.toLowerCase()) : [];
+      
+      return fullName.includes(query) || 
+             contact.firstName.toLowerCase().includes(query) || 
+             contact.lastName.toLowerCase().includes(query) ||
+             emails.some(email => email.includes(query)) ||
+             contact.phoneNumbers.some(phone => phone.number.toLowerCase().includes(query));
+    }
+    return true;
+  });
   
   // Close contact details
   const closeDetails = () => {

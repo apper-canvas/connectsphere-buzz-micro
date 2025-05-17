@@ -276,7 +276,7 @@ const MainFeature = ({ isOpen, onClose, searchQuery = '' }) => {
     });
     setSelectedContact(contact);
     setIsEditing(true);
-    setIsDetailView(false);
+    setIsDetailView(false); 
     onClose(true); // Open edit form modal
   };
   
@@ -940,7 +940,7 @@ const MainFeature = ({ isOpen, onClose, searchQuery = '' }) => {
                   <div className="flex items-center gap-2">
                     <button 
                       onClick={() => editContact(selectedContact)}
-                      className="p-2 rounded-full hover:bg-surface-200 dark:hover:bg-surface-700 transition-colors text-primary"
+                      className="flex items-center gap-2 p-2 rounded-lg hover:bg-primary-light/20 dark:hover:bg-primary-dark/20 transition-colors text-primary"
                     >
                       <Edit className="w-5 h-5" />
                     </button>
